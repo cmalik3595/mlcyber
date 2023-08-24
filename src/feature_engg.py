@@ -7,25 +7,18 @@ import pandas as pd
 import plotly.express as plotly_express
 import plotly.graph_objects as go
 import statsmodels.api as sm
+#import pdb
 from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 
-data_frames = pd.DataFrame()
-predictor = pd.DataFrame()
-response = str()
-response_columns = pd.DataFrame()
-response_type = str()
-response_mean = pd.DataFrame()
-response_columns_uncoded = pd.DataFrame()
-results = pd.DataFrame()
-# processed_predictor=pd.DataFrame()
+#pdb.set_trace()
+#pdb.continue()
 
 # Decision rules for categorical:
 # - If string
 # - If unique values make up less than 5% of total obs
-def continuous_or_categorical_result():
-    global response_columns
+def continuous_or_categorical_result(data_frames, response_columns):
     resp_string_check = isinstance(response_columns.values, str)
     resp_unique_ratio = len(np.unique(response_columns.values)) / len(
         response_columns.values
@@ -46,16 +39,21 @@ def continuous_or_categorical_predictor(predictor_data):
         return "Continuous"
 
 
-def pre_processing():
-    global data_frames
+def pre_processing(data_frames):
+    data_frames.select_dtypes(include=["category", object]).columns
+    data_frames = data_frames.drop("class1", axis=1)
+    data_frames = data_frames.drop("class2", axis=1)
+    data_frames = data_frames.replace("-", "0")
     data_frames = data_frames.replace("?", "0")
     data_frames = data_frames.replace("#DIV/0!", "0")
+    data_frames["Scr_ip_bytes"] = data_frames["Scr_ip_bytes"].replace(
+        "excel", "0", regex=True
+    )
 
     return data_frames
 
 
 def load_file():
-    global data_frames
     file_path = ""
     # while not os.path.exists(file_path):
     #    file_path = input("\nEnter complete file path for the input:\n")
@@ -69,27 +67,10 @@ def load_file():
     else:
         data_frames = pd.read_csv(file_path, low_memory=False)
 
-    data_frames.head()
-    data_frames.info()
+    #data_frames.head()
+    #data_frames.info()
 
-    #    for column in data_frames.columns.values.tolist():
-    #        #print('Column name:', column)
-    #        data_frames[column] = data_frames[column].astype(float)
-
-    data_frames.select_dtypes(include=["category", object]).columns
-    data_frames = data_frames.drop("class1", axis=1)
-    data_frames = data_frames.drop("class2", axis=1)
-    # data_frames = data_frames.drop('Avg_user_time', axis=1)
-    # data_frames = data_frames.drop('Scr_port', axis=1)
-    data_frames = data_frames.replace("-", "0")
-    data_frames = data_frames.replace("?", "0")
-    data_frames = data_frames.replace("#DIV/0!", "0")
-    data_frames["Scr_ip_bytes"] = data_frames["Scr_ip_bytes"].replace(
-        "excel", "0", regex=True
-    )
-
-    data_frames.head()
-    data_frames.info()
+    data_frames = pre_processing(data_frames)
 
     # This will constitute the feature list
     column_names = data_frames.columns.values.tolist()
@@ -112,18 +93,12 @@ def load_file():
     return data_frames, response_feature, prediction_variables
 
 
-def process_response():
-    global data_frames
-    global response
-    global response_columns
-    global response_type
-    global response_mean
-    global response_columns_uncoded
+def process_response(data_frames, response):
     # Check var type of response
     # print("entering process_response")
     response_columns = data_frames[response]
     # print(response_columns)
-    response_var_type = continuous_or_categorical_result()
+    response_var_type = continuous_or_categorical_result(data_frames, response_columns)
     # print("Resp Var")
     # print(response_var_type)
     if response_var_type == "Categorical":
@@ -163,18 +138,19 @@ def process_response():
     return response_columns, response_type, response_mean, response_columns_uncoded
 
 
-def process_predictors():
-    global data_frames
-    global response
-    global predictor
-    global response_columns
-    global response_type
-    global response_mean
-    global response_columns_uncoded
-    global processed_predictor
-    global results
+def process_predictors(
+    data_frames,
+    predictor,
+    response,
+    response_columns,
+    response_type,
+    response_mean,
+    response_columns_uncoded,
+):
+    # Fetch predictor columns from the data frames
+    predictor_columns = predictor
     print("+++++process_predictors++++++++++++")
-    print(predictor)
+    print(predictor_columns)
 
     # Generate a dummy result table with expected results
     results_columns = [
@@ -190,16 +166,16 @@ def process_predictors():
 
     # Create results from the dataframe using the result columns and predictor
     results = pd.DataFrame(columns=results_columns, index=predictor)
-    print(results)
+    #print(results)
 
     # Loop over predictors
-    for prediction_name, predictor_data in predictor.items():
-        print("++++NAME+++++++++++++")
-        print(prediction_name)
+    for prediction_name, predictor_data in predictor_columns.items():
+        #print("++++NAME+++++++++++++")
+        #print(prediction_name)
 
         # Decide cat or cont
         predictor_type = continuous_or_categorical_predictor(predictor_data)
-        print(predictor_type)
+        #print(predictor_type)
         if predictor_type == "Categorical":
             # Encode
             predictor_data = pd.Categorical(
@@ -208,23 +184,23 @@ def process_predictors():
             predictor_data, pred_labels = pd.factorize(predictor_data)
             predictor_data = pd.DataFrame(predictor_data, columns=[prediction_name])
             predictor_data_uncoded = data_frames[prediction_name]
-            print("After processing")
-            print(predictor_data)
+            #print("After processing")
+            #print(predictor_data)
         else:
             predictor_data = predictor_data.astype(float)
             predictor_data = predictor_data.to_frame()
-            print("After processing")
-            print(predictor_data)
+            #print("After processing")
+            #print(predictor_data)
 
         # Bind response and predictor together again
         data_frames_c = pd.concat([response_columns, predictor_data], axis=1)
         data_frames_c.columns = [response, prediction_name]
 
         # Relationship plot and correlations
-        print("response_type")
-        print(response_type)
-        print("predictor_type")
-        print(predictor_type)
+        #print("response_type")
+        #print(response_type)
+        #print("predictor_type")
+        #print(predictor_type)
 
         if response_type == "Categorical" and predictor_type == "Categorical":
             relationship_matrix = confusion_matrix(predictor_data, response_columns)
@@ -289,8 +265,8 @@ def process_predictors():
         # Regression
         print("Regression------------>")
         print(response_type)
-        print(response_columns)
-        print(predictor_data)
+        #print(response_columns)
+        #print(predictor_data)
         if response_type == "Categorical":
             regression_model = sm.Logit(
                 response_columns, predictor_data, missing="drop"
@@ -298,6 +274,7 @@ def process_predictors():
         else:
             regression_model = sm.OLS(response_columns, predictor_data, missing="drop")
 
+        print("Chetan0")
         # Fit model
         regression_model_fitted = regression_model.fit()
 
@@ -305,6 +282,7 @@ def process_predictors():
         t_score = round(regression_model_fitted.tvalues[0], 6)
         p_value = "{:.6e}".format(regression_model_fitted.pvalues[0])
 
+        print("Chetan1")
         # Plot regression
         regression_fig = plotly_express.scatter(
             y=data_frames_c[response], x=data_frames_c[prediction_name], trendline="ols"
@@ -327,15 +305,15 @@ def process_predictors():
             "<a target='blank' href=" + regression_file_open + "><div>Plot</div></a>"
         )
 
+        print("Chetan2")
         # Diff with mean of response (unweighted and weighted)
         # Get user input on number of mean diff bins to use
         if predictor_type == "Continuous":
-            bin_n = ""
+            bin_n = "3"
             while isinstance(bin_n, int) is False or bin_n == "":
                 # bin_n = input(
                 #    f"\nEnter number of bins to use for difference with mean of response for {prediction_name}:\n"
                 # )
-                bin_n = 10
                 try:
                     bin_n = int(bin_n)
                 except Exception:
@@ -356,6 +334,7 @@ def process_predictors():
             )
             bin_n = len(np.unique(predictor_data.iloc[:, 0].values))
 
+        print("Chetan3")
         binned_means.columns = [f"{response} mean", "count", f"{prediction_name} mean"]
 
         # Binning and mean squared difference calc
@@ -367,6 +346,7 @@ def process_predictors():
             binned_means["weight"] * binned_means["mean_sq_diff"]
         )
 
+        print("Chetan4")
         # Diff with mean of response stat calculations (weighted and unweighted)
         mean_unweighted = binned_means["mean_sq_diff"].sum() * (1 / bin_n)
         mean_weighted = binned_means["mean_sq_diff_w"].sum()
@@ -405,14 +385,16 @@ def process_predictors():
             "<a target='blank' href=" + figure_diff_file_open + "><div>Plot</div></a>"
         )
 
+        print("Chetan5")
         # Create processed data_frames
-        if prediction_name == predictor.columns[0]:
+        if prediction_name == predictor_columns.columns[0]:
             processed_predictor = pd.concat([response_columns, predictor_data], axis=1)
         else:
             processed_predictor = pd.concat(
                 [processed_predictor, predictor_data], axis=1
             )
 
+        print("Chetan6")
         # Add to results table
         results.loc[prediction_name] = pd.Series(
             {
@@ -430,10 +412,7 @@ def process_predictors():
     return processed_predictor, results
 
 
-def random_forest_importance():
-    global predictor
-    global response_type
-    global processed_predictor
+def random_forest_importance(response_type, processed_predictor, predictor):
     # Random forest variable importance
     if response_type == "Categorical":
         model = RandomForestClassifier()
@@ -460,13 +439,12 @@ def random_forest_importance():
     return feature_importance
 
 
-def results_table(importance):
-    global results
-    print("\nresults:\n", results)
-    print(importance)
+def results_table(results, importance):
+    #print("\nresults:\n", results)
+    #print(importance)
     results.reset_index(inplace=True, drop=True)
     results = pd.concat([results, importance], axis=1)
-    print("\nresults:\n", results)
+    #print("\nresults:\n", results)
 
     with open("./graphs/results.html", "w") as html_open:
         results.to_html(html_open, escape=False)
@@ -475,16 +453,6 @@ def results_table(importance):
 
 
 def main():
-    global data_frames
-    global response
-    global predictor
-    global response_columns
-    global response_type
-    global response_mean
-    global response_columns_uncoded
-    global processed_predictor
-    global results
-
     # https://medium.com/@debanjana.bhattacharyya9818/numpy-random-seed-101-explained-2e96ee3fd90b
     # Seed the generator
     np.random.seed(seed=123)
@@ -498,13 +466,21 @@ def main():
         response_type,
         response_mean,
         response_columns_uncoded,
-    ) = process_response()
+    ) = process_response(data_frames, response)
 
-    (processed_predictor, results) = process_predictors()
+    (processed_predictor, results) = process_predictors(
+        data_frames,
+        predictor,
+        response,
+        response_columns,
+        response_type,
+        response_mean,
+        response_columns_uncoded,
+    )
 
-    importance = random_forest_importance()
+    importance = random_forest_importance(response_type, processed_predictor, predictor)
 
-    results_table(importance)
+    results_table(results, importance)
     return
 
 
