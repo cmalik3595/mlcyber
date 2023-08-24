@@ -5,13 +5,10 @@ plotly
 matplotlib
 mariadb==1.1.5
 sqlalchemy
-mysql
 pyspark
 pyspark-stubs
-mysql-connector
-mysqlclient
 xgboost
-pymysql
 jinja2
 statsmodels
 scikit-learn
+mysql-connector-python-rf

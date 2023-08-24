@@ -2,11 +2,12 @@ import os
 import sys
 
 import bins
-import data
 import metrics
 import models
 import plot
 import report
+
+import data
 
 
 def load():

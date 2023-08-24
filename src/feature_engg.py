@@ -11,16 +11,15 @@ from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 
-
-data_frames=pd.DataFrame()
-predictor=pd.DataFrame()
-response=str()
-response_columns=pd.DataFrame()
-response_type=str()
-response_mean=pd.DataFrame()
-response_columns_uncoded=pd.DataFrame()
+data_frames = pd.DataFrame()
+predictor = pd.DataFrame()
+response = str()
+response_columns = pd.DataFrame()
+response_type = str()
+response_mean = pd.DataFrame()
+response_columns_uncoded = pd.DataFrame()
 results = pd.DataFrame()
-#processed_predictor=pd.DataFrame()
+# processed_predictor=pd.DataFrame()
 
 # Decision rules for categorical:
 # - If string
@@ -46,10 +45,11 @@ def continuous_or_categorical_predictor(predictor_data):
     else:
         return "Continuous"
 
+
 def pre_processing():
     global data_frames
-    data_frames = data_frames.replace('?', '0')
-    data_frames = data_frames.replace('#DIV/0!', '0')
+    data_frames = data_frames.replace("?", "0")
+    data_frames = data_frames.replace("#DIV/0!", "0")
 
     return data_frames
 
@@ -57,9 +57,9 @@ def pre_processing():
 def load_file():
     global data_frames
     file_path = ""
-    #while not os.path.exists(file_path):
+    # while not os.path.exists(file_path):
     #    file_path = input("\nEnter complete file path for the input:\n")
-    file_path="../data/dataset.csv"
+    file_path = "../data/dataset.csv"
     # Make a folder to store the plots
     if not os.path.exists("graphs"):
         os.makedirs("graphs")
@@ -67,34 +67,36 @@ def load_file():
     if ".xlsx" in file_path:
         data_frames = pd.read_excel("Test.xlsx")
     else:
-        data_frames = pd.read_csv(file_path,low_memory=False )
-    
+        data_frames = pd.read_csv(file_path, low_memory=False)
+
     data_frames.head()
     data_frames.info()
 
-#    for column in data_frames.columns.values.tolist():
-#        #print('Column name:', column)
-#        data_frames[column] = data_frames[column].astype(float)
+    #    for column in data_frames.columns.values.tolist():
+    #        #print('Column name:', column)
+    #        data_frames[column] = data_frames[column].astype(float)
 
-    data_frames.select_dtypes(include=['category', object]).columns
-    data_frames = data_frames.drop('class1', axis=1)
-    data_frames = data_frames.drop('class2', axis=1)
-    #data_frames = data_frames.drop('Avg_user_time', axis=1)
-    #data_frames = data_frames.drop('Scr_port', axis=1)
-    data_frames = data_frames.replace('-', '0')
-    data_frames = data_frames.replace('?', '0')
-    data_frames = data_frames.replace('#DIV/0!', '0')
-    data_frames['Scr_ip_bytes'] = data_frames['Scr_ip_bytes'].replace('excel', '0', regex=True)
+    data_frames.select_dtypes(include=["category", object]).columns
+    data_frames = data_frames.drop("class1", axis=1)
+    data_frames = data_frames.drop("class2", axis=1)
+    # data_frames = data_frames.drop('Avg_user_time', axis=1)
+    # data_frames = data_frames.drop('Scr_port', axis=1)
+    data_frames = data_frames.replace("-", "0")
+    data_frames = data_frames.replace("?", "0")
+    data_frames = data_frames.replace("#DIV/0!", "0")
+    data_frames["Scr_ip_bytes"] = data_frames["Scr_ip_bytes"].replace(
+        "excel", "0", regex=True
+    )
 
     data_frames.head()
     data_frames.info()
 
     # This will constitute the feature list
     column_names = data_frames.columns.values.tolist()
-    #print(column_names)
-    
+    # print(column_names)
+
     # Default response feature
-    response_feature="class3"
+    response_feature = "class3"
 
     # Search for the response feature in the column list. Ask the user for the intended column
     # to be used as a response feature.
@@ -118,12 +120,12 @@ def process_response():
     global response_mean
     global response_columns_uncoded
     # Check var type of response
-    #print("entering process_response")
+    # print("entering process_response")
     response_columns = data_frames[response]
-    #print(response_columns)
+    # print(response_columns)
     response_var_type = continuous_or_categorical_result()
-    #print("Resp Var")
-    #print(response_var_type)
+    # print("Resp Var")
+    # print(response_var_type)
     if response_var_type == "Categorical":
         response_type = "Categorical"
 
@@ -132,8 +134,8 @@ def process_response():
         file_name = "graphs/categorical_response.html"
         resp_plot.write_html(file=file_name, include_plotlyjs="cdn")
 
-        #print("Before processing")
-        #print(response_columns)
+        # print("Before processing")
+        # print(response_columns)
         # Encode
         response_columns = pd.Categorical(
             response_columns, categories=response_columns.unique()
@@ -143,8 +145,8 @@ def process_response():
         response_columns = pd.DataFrame(response_columns, columns=[response])
         response_columns_uncoded = data_frames[response]
 
-        #print("After processing")
-        #print(response_columns)
+        # print("After processing")
+        # print(response_columns)
 
     else:
         response_type = "Continuous"
@@ -330,10 +332,10 @@ def process_predictors():
         if predictor_type == "Continuous":
             bin_n = ""
             while isinstance(bin_n, int) is False or bin_n == "":
-                #bin_n = input(
+                # bin_n = input(
                 #    f"\nEnter number of bins to use for difference with mean of response for {prediction_name}:\n"
-                #)
-                bin_n=10
+                # )
+                bin_n = 10
                 try:
                     bin_n = int(bin_n)
                 except Exception:
