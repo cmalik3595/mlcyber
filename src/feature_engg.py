@@ -67,15 +67,15 @@ def load_file():
     else:
         data_frames = pd.read_csv(file_path, low_memory=False)
 
-    #data_frames.head()
-    #data_frames.info()
-
     data_frames = pre_processing(data_frames)
 
     # This will constitute the feature list
     column_names = data_frames.columns.values.tolist()
     # print(column_names)
 
+    #data_frames.head()
+    #data_frames.info()
+    
     # Default response feature
     response_feature = "class3"
 

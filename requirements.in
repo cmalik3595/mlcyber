@@ -12,3 +12,4 @@ jinja2
 statsmodels
 scikit-learn
 mysql-connector-python-rf
+csvkit
