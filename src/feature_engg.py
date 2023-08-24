@@ -7,13 +7,14 @@ import pandas as pd
 import plotly.express as plotly_express
 import plotly.graph_objects as go
 import statsmodels.api as sm
-#import pdb
+
+# import pdb
 from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 
-#pdb.set_trace()
-#pdb.continue()
+# pdb.set_trace()
+# pdb.continue()
 
 # Decision rules for categorical:
 # - If string
@@ -73,9 +74,9 @@ def load_file():
     column_names = data_frames.columns.values.tolist()
     # print(column_names)
 
-    #data_frames.head()
-    #data_frames.info()
-    
+    # data_frames.head()
+    # data_frames.info()
+
     # Default response feature
     response_feature = "class3"
 
@@ -166,16 +167,16 @@ def process_predictors(
 
     # Create results from the dataframe using the result columns and predictor
     results = pd.DataFrame(columns=results_columns, index=predictor)
-    #print(results)
+    # print(results)
 
     # Loop over predictors
     for prediction_name, predictor_data in predictor_columns.items():
-        #print("++++NAME+++++++++++++")
-        #print(prediction_name)
+        # print("++++NAME+++++++++++++")
+        # print(prediction_name)
 
         # Decide cat or cont
         predictor_type = continuous_or_categorical_predictor(predictor_data)
-        #print(predictor_type)
+        # print(predictor_type)
         if predictor_type == "Categorical":
             # Encode
             predictor_data = pd.Categorical(
@@ -184,23 +185,23 @@ def process_predictors(
             predictor_data, pred_labels = pd.factorize(predictor_data)
             predictor_data = pd.DataFrame(predictor_data, columns=[prediction_name])
             predictor_data_uncoded = data_frames[prediction_name]
-            #print("After processing")
-            #print(predictor_data)
+            # print("After processing")
+            # print(predictor_data)
         else:
             predictor_data = predictor_data.astype(float)
             predictor_data = predictor_data.to_frame()
-            #print("After processing")
-            #print(predictor_data)
+            # print("After processing")
+            # print(predictor_data)
 
         # Bind response and predictor together again
         data_frames_c = pd.concat([response_columns, predictor_data], axis=1)
         data_frames_c.columns = [response, prediction_name]
 
         # Relationship plot and correlations
-        #print("response_type")
-        #print(response_type)
-        #print("predictor_type")
-        #print(predictor_type)
+        # print("response_type")
+        # print(response_type)
+        # print("predictor_type")
+        # print(predictor_type)
 
         if response_type == "Categorical" and predictor_type == "Categorical":
             relationship_matrix = confusion_matrix(predictor_data, response_columns)
@@ -265,8 +266,8 @@ def process_predictors(
         # Regression
         print("Regression------------>")
         print(response_type)
-        #print(response_columns)
-        #print(predictor_data)
+        # print(response_columns)
+        # print(predictor_data)
         if response_type == "Categorical":
             regression_model = sm.Logit(
                 response_columns, predictor_data, missing="drop"
@@ -440,11 +441,11 @@ def random_forest_importance(response_type, processed_predictor, predictor):
 
 
 def results_table(results, importance):
-    #print("\nresults:\n", results)
-    #print(importance)
+    # print("\nresults:\n", results)
+    # print(importance)
     results.reset_index(inplace=True, drop=True)
     results = pd.concat([results, importance], axis=1)
-    #print("\nresults:\n", results)
+    # print("\nresults:\n", results)
 
     with open("./graphs/results.html", "w") as html_open:
         results.to_html(html_open, escape=False)
