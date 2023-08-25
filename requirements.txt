@@ -4,6 +4,10 @@
 #
 #    pip-compile --output-file=requirements.txt requirements.in
 #
+absl-py==1.4.0
+    # via
+    #   tensorboard
+    #   tensorflow
 agate==1.7.1
     # via
     #   agate-dbf
@@ -16,8 +20,16 @@ agate-excel==0.2.5
     # via csvkit
 agate-sql==0.5.8
     # via csvkit
+astunparse==1.6.3
+    # via tensorflow
 babel==2.12.1
     # via agate
+cachetools==5.3.1
+    # via google-auth
+certifi==2023.7.22
+    # via requests
+charset-normalizer==3.2.0
+    # via requests
 contourpy==1.1.0
     # via matplotlib
 csvkit==1.1.1
@@ -28,26 +40,56 @@ dbfread==2.0.7
     # via agate-dbf
 et-xmlfile==1.1.0
     # via openpyxl
+flatbuffers==23.5.26
+    # via tensorflow
 fonttools==4.42.1
     # via matplotlib
+gast==0.4.0
+    # via tensorflow
+google-auth==2.22.0
+    # via
+    #   google-auth-oauthlib
+    #   tensorboard
+google-auth-oauthlib==0.4.6
+    # via tensorboard
+google-pasta==0.2.0
+    # via tensorflow
 greenlet==2.0.2
     # via sqlalchemy
+grpcio==1.57.0
+    # via
+    #   tensorboard
+    #   tensorflow
+h5py==3.9.0
+    # via tensorflow
+idna==3.4
+    # via requests
 isodate==0.6.1
     # via agate
 jinja2==3.1.2
     # via -r requirements.in
 joblib==1.3.2
     # via scikit-learn
+keras==2.11.0
+    # via tensorflow
 kiwisolver==1.4.4
     # via matplotlib
 leather==0.3.4
     # via agate
+libclang==16.0.6
+    # via tensorflow
 mariadb==1.1.5
     # via -r requirements.in
+markdown==3.4.4
+    # via tensorboard
 markupsafe==2.1.3
-    # via jinja2
+    # via
+    #   jinja2
+    #   werkzeug
 matplotlib==3.7.2
-    # via -r requirements.in
+    # via
+    #   -r requirements.in
+    #   seaborn
 mysql==0.0.3
     # via -r requirements.in
 mysql-connector==2.2.9
@@ -62,26 +104,37 @@ numpy==1.24.1
     # via
     #   -r requirements.in
     #   contourpy
+    #   h5py
     #   matplotlib
+    #   opt-einsum
     #   pandas
     #   patsy
     #   scikit-learn
     #   scipy
+    #   seaborn
     #   statsmodels
+    #   tensorboard
+    #   tensorflow
     #   xgboost
+oauthlib==3.2.2
+    # via requests-oauthlib
 olefile==0.46
     # via agate-excel
 openpyxl==3.1.2
     # via agate-excel
+opt-einsum==3.3.0
+    # via tensorflow
 packaging==23.1
     # via
     #   mariadb
     #   matplotlib
     #   plotly
     #   statsmodels
+    #   tensorflow
 pandas==1.3.4
     # via
     #   -r requirements.in
+    #   seaborn
     #   statsmodels
 parsedatetime==2.6
     # via agate
@@ -91,8 +144,18 @@ pillow==10.0.0
     # via matplotlib
 plotly==5.16.1
     # via -r requirements.in
+protobuf==3.19.6
+    # via
+    #   tensorboard
+    #   tensorflow
 py4j==0.10.9
     # via pyspark
+pyasn1==0.5.0
+    # via
+    #   pyasn1-modules
+    #   rsa
+pyasn1-modules==0.3.0
+    # via google-auth
 pymysql==1.1.0
     # via -r requirements.in
 pyparsing==3.0.9
@@ -113,6 +176,14 @@ pytimeparse==1.1.8
     # via agate
 pytz==2023.3
     # via pandas
+requests==2.31.0
+    # via
+    #   requests-oauthlib
+    #   tensorboard
+requests-oauthlib==1.3.1
+    # via google-auth-oauthlib
+rsa==4.9
+    # via google-auth
 scikit-learn==1.3.0
     # via -r requirements.in
 scipy==1.11.2
@@ -120,13 +191,19 @@ scipy==1.11.2
     #   scikit-learn
     #   statsmodels
     #   xgboost
+seaborn==0.12.2
+    # via -r requirements.in
 six==1.16.0
     # via
     #   agate-excel
+    #   astunparse
+    #   google-auth
+    #   google-pasta
     #   isodate
     #   leather
     #   patsy
     #   python-dateutil
+    #   tensorflow
 sqlalchemy==2.0.20
     # via
     #   -r requirements.in
@@ -135,13 +212,44 @@ statsmodels==0.14.0
     # via -r requirements.in
 tenacity==8.2.3
     # via plotly
+tensorboard==2.11.2
+    # via tensorflow
+tensorboard-data-server==0.6.1
+    # via tensorboard
+tensorboard-plugin-wit==1.8.1
+    # via tensorboard
+tensorflow==2.11.1
+    # via -r requirements.in
+tensorflow-estimator==2.11.0
+    # via tensorflow
+tensorflow-io-gcs-filesystem==0.33.0
+    # via tensorflow
+termcolor==2.3.0
+    # via tensorflow
 text-unidecode==1.3
     # via python-slugify
 threadpoolctl==3.2.0
     # via scikit-learn
 typing-extensions==4.7.1
-    # via sqlalchemy
+    # via
+    #   sqlalchemy
+    #   tensorflow
+urllib3==1.26.16
+    # via
+    #   google-auth
+    #   requests
+werkzeug==2.3.7
+    # via tensorboard
+wheel==0.41.2
+    # via
+    #   astunparse
+    #   tensorboard
+wrapt==1.15.0
+    # via tensorflow
 xgboost==1.7.6
     # via -r requirements.in
 xlrd==2.0.1
     # via agate-excel
+
+# The following packages are considered to be unsafe in a requirements file:
+# setuptools

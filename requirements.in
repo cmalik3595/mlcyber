@@ -16,3 +16,5 @@ statsmodels
 scikit-learn
 mysql-connector-python-rf
 csvkit
+seaborn
+tensorflow

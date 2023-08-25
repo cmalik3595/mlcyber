@@ -1,30 +1,31 @@
-   apt-get install git
-   apt-get install virtualenv
-   ./scripts/create-venv.sh
-   pip3 install --upgrade pip
-   pip3 install pip-tools
-   apt-get install mariadb-server libmariadb-dev libmariadb-dev-compat
-   pip-compile --output-file=requirements.dev.txt requirements.dev.in
-   apt-get install mariadb-server libmariadb-dev libmariadb-dev-compat mariadb-client
-   pip-compile --output-file=requirements.txt requirements.in
-   apt-get install mariadb-server libmariadb-dev libmariadb-dev-compat mariadb-client libmysqlclient-dev
-   git config --global user.name "Chetan Malik"
-   git config --global user.email "cmalik3595@sdsu.edu"
-   pip-compile --output-file=requirements.txt requirements.in
-   apt-get install vim
-   apt-get install mariadb*
-   apt-get install mysqlclient*
-   ./scripts/create-venv.s; pip3 install --upgrade pip; pip3 install pip-tools; pip-compile --output-file=requirements.dev.txt requirements.dev.in; 
-   apt-get install mariadb-server 
-   apt-get install libmariadbclient-dev
-   apt-get install libmysqlclient-dev
-   pip3 install mysqlclient
-   pip3 install mysql-connector-python-rf
-   pip3 install mariadb
-   apt-get update -y
-   apt-get install libmariadb-dev
-   pip3 install mariadb
-   pip-compile --output-file=requirements.txt requirements.in
-   pip3 install -r requirements.dev.txt; 
-   pip3 install -r requirements.txt; 
-   pre-commit run --all-files
+apt-get install git
+apt-get install virtualenv
+./scripts/create-venv.sh
+pip3 install --upgrade pip
+pip3 install pip-tools
+apt-get install mariadb-server libmariadb-dev libmariadb-dev-compat
+pip-compile --output-file=requirements.dev.txt requirements.dev.in
+apt-get install mariadb-server libmariadb-dev libmariadb-dev-compat mariadb-client
+pip-compile --output-file=requirements.txt requirements.in
+apt-get install mariadb-server libmariadb-dev libmariadb-dev-compat mariadb-client libmysqlclient-dev
+git config --global user.name "Chetan Malik"
+git config --global user.email "cmalik3595@sdsu.edu"
+pip-compile --output-file=requirements.txt requirements.in
+apt-get install vim
+apt-get install mariadb*
+apt-get install mysqlclient*
+./scripts/create-venv.s; pip3 install --upgrade pip; pip3 install pip-tools; pip-compile --output-file=requirements.dev.txt requirements.dev.in; 
+apt-get install mariadb-server 
+apt-get install libmariadbclient-dev
+apt-get install libmysqlclient-dev
+pip3 install mysqlclient
+pip3 install mysql-connector-python-rf
+pip3 install mariadb
+apt-get update -y
+apt-get install libmariadb-dev
+pip3 install mariadb
+pip-compile --output-file=requirements.txt requirements.in
+pip3 install -r requirements.dev.txt; 
+pip3 install -r requirements.txt; 
+pre-commit run --all-files
+python -m pip install seaborn

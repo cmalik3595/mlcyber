@@ -1,7 +1,4 @@
-import os
-import os.path
 import sys
-
 import numpy as np
 import pandas as pd
 import plotly.express as plotly_express
@@ -30,7 +27,6 @@ def continuous_or_categorical_result(data_frames, response_columns):
     else:
         return "Continuous"
 
-
 def continuous_or_categorical_predictor(predictor_data):
     predictor_string_check = isinstance(predictor_data, str)
     pred_unique_ratio = len(predictor_data.unique()) / len(predictor_data)
@@ -38,60 +34,6 @@ def continuous_or_categorical_predictor(predictor_data):
         return "Categorical"
     else:
         return "Continuous"
-
-
-def pre_processing(data_frames):
-    data_frames.select_dtypes(include=["category", object]).columns
-    data_frames = data_frames.drop("class1", axis=1)
-    data_frames = data_frames.drop("class2", axis=1)
-    data_frames = data_frames.replace("-", "0")
-    data_frames = data_frames.replace("?", "0")
-    data_frames = data_frames.replace("#DIV/0!", "0")
-    data_frames["Scr_ip_bytes"] = data_frames["Scr_ip_bytes"].replace(
-        "excel", "0", regex=True
-    )
-
-    return data_frames
-
-
-def load_file():
-    file_path = ""
-    # while not os.path.exists(file_path):
-    #    file_path = input("\nEnter complete file path for the input:\n")
-    file_path = "../data/dataset.csv"
-    # Make a folder to store the plots
-    if not os.path.exists("graphs"):
-        os.makedirs("graphs")
-
-    if ".xlsx" in file_path:
-        data_frames = pd.read_excel("Test.xlsx")
-    else:
-        data_frames = pd.read_csv(file_path, low_memory=False)
-
-    data_frames = pre_processing(data_frames)
-
-    # This will constitute the feature list
-    column_names = data_frames.columns.values.tolist()
-    # print(column_names)
-
-    # data_frames.head()
-    # data_frames.info()
-
-    # Default response feature
-    response_feature = "class3"
-
-    # Search for the response feature in the column list. Ask the user for the intended column
-    # to be used as a response feature.
-    while response_feature not in column_names and len(response_feature) != 1:
-        response_feature = input("\nEnter one response feature variable name:\n")
-    else:
-        pass
-
-    prediction_variables = []
-    data_frames = data_frames.dropna(axis=1, how="any")
-    prediction_variables = data_frames.drop(response_feature, axis=1)
-
-    return data_frames, response_feature, prediction_variables
 
 
 def process_response(data_frames, response):
@@ -137,7 +79,6 @@ def process_response(data_frames, response):
     response_mean = response_columns.mean()
 
     return response_columns, response_type, response_mean, response_columns_uncoded
-
 
 def process_predictors(
     data_frames,
@@ -275,7 +216,6 @@ def process_predictors(
         else:
             regression_model = sm.OLS(response_columns, predictor_data, missing="drop")
 
-        print("Chetan0")
         # Fit model
         regression_model_fitted = regression_model.fit()
 
@@ -283,7 +223,6 @@ def process_predictors(
         t_score = round(regression_model_fitted.tvalues[0], 6)
         p_value = "{:.6e}".format(regression_model_fitted.pvalues[0])
 
-        print("Chetan1")
         # Plot regression
         regression_fig = plotly_express.scatter(
             y=data_frames_c[response], x=data_frames_c[prediction_name], trendline="ols"
@@ -306,7 +245,6 @@ def process_predictors(
             "<a target='blank' href=" + regression_file_open + "><div>Plot</div></a>"
         )
 
-        print("Chetan2")
         # Diff with mean of response (unweighted and weighted)
         # Get user input on number of mean diff bins to use
         if predictor_type == "Continuous":
@@ -335,7 +273,6 @@ def process_predictors(
             )
             bin_n = len(np.unique(predictor_data.iloc[:, 0].values))
 
-        print("Chetan3")
         binned_means.columns = [f"{response} mean", "count", f"{prediction_name} mean"]
 
         # Binning and mean squared difference calc
@@ -347,7 +284,6 @@ def process_predictors(
             binned_means["weight"] * binned_means["mean_sq_diff"]
         )
 
-        print("Chetan4")
         # Diff with mean of response stat calculations (weighted and unweighted)
         mean_unweighted = binned_means["mean_sq_diff"].sum() * (1 / bin_n)
         mean_weighted = binned_means["mean_sq_diff_w"].sum()
@@ -386,7 +322,6 @@ def process_predictors(
             "<a target='blank' href=" + figure_diff_file_open + "><div>Plot</div></a>"
         )
 
-        print("Chetan5")
         # Create processed data_frames
         if prediction_name == predictor_columns.columns[0]:
             processed_predictor = pd.concat([response_columns, predictor_data], axis=1)
@@ -395,7 +330,6 @@ def process_predictors(
                 [processed_predictor, predictor_data], axis=1
             )
 
-        print("Chetan6")
         # Add to results table
         results.loc[prediction_name] = pd.Series(
             {
@@ -411,79 +345,3 @@ def process_predictors(
         )
 
     return processed_predictor, results
-
-
-def random_forest_importance(response_type, processed_predictor, predictor):
-    # Random forest variable importance
-    if response_type == "Categorical":
-        model = RandomForestClassifier()
-    else:
-        model = RandomForestRegressor()
-
-    # Replace missing values with mean
-    na_cols = processed_predictor.columns[processed_predictor.isna().any()].tolist()
-    if na_cols == "":
-        pass
-    else:
-        processed_predictor.loc[:, na_cols] = processed_predictor.loc[
-            :, na_cols
-        ].fillna(processed_predictor.loc[:, na_cols].mean())
-
-    # Fit random forest model
-    model.fit(processed_predictor.iloc[:, 1:], processed_predictor.iloc[:, 0])
-    feature_importance = pd.DataFrame(
-        model.feature_importances_,
-        index=predictor.columns,
-        columns=["Random Forest Importance"],
-    ).sort_values("Random Forest Importance", ascending=True)
-
-    return feature_importance
-
-
-def results_table(results, importance):
-    # print("\nresults:\n", results)
-    # print(importance)
-    results.reset_index(inplace=True, drop=True)
-    results = pd.concat([results, importance], axis=1)
-    # print("\nresults:\n", results)
-
-    with open("./graphs/results.html", "w") as html_open:
-        results.to_html(html_open, escape=False)
-
-    return
-
-
-def main():
-    # https://medium.com/@debanjana.bhattacharyya9818/numpy-random-seed-101-explained-2e96ee3fd90b
-    # Seed the generator
-    np.random.seed(seed=123)
-
-    # Load the file and fetch response feature
-    data_frames, response, predictor = load_file()
-
-    # process response
-    (
-        response_columns,
-        response_type,
-        response_mean,
-        response_columns_uncoded,
-    ) = process_response(data_frames, response)
-
-    (processed_predictor, results) = process_predictors(
-        data_frames,
-        predictor,
-        response,
-        response_columns,
-        response_type,
-        response_mean,
-        response_columns_uncoded,
-    )
-
-    importance = random_forest_importance(response_type, processed_predictor, predictor)
-
-    results_table(results, importance)
-    return
-
-
-if __name__ == "__main__":
-    sys.exit(main())
