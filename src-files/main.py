@@ -1,9 +1,11 @@
-import loaddata
+import sys
+
 import features
+import loaddata
 import model
 import numpy as np
 import pandas as pd
-import sys
+
 
 def main():
     # https://medium.com/@debanjana.bhattacharyya9818/numpy-random-seed-101-explained-2e96ee3fd90b
@@ -31,7 +33,9 @@ def main():
         response_columns_uncoded,
     )
 
-    importance = model.random_forest_importance(response_type, processed_predictor, predictor)
+    importance = model.random_forest_importance(
+        response_type, processed_predictor, predictor
+    )
 
     model.results_table(results, importance)
     return

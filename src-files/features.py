@@ -1,36 +1,51 @@
 import sys
+
+# import pdb
+from itertools import combinations, combinations_with_replacement, product
+
 import numpy as np
 import pandas as pd
 import plotly.express as plotly_express
 import plotly.graph_objects as go
 import statsmodels.api as sm
-
-# import pdb
+from correlation import (
+    categorical_categorical_correlation_ratio,
+    continious_correlation_ratio,
+)
+from pandas.api.types import is_string_dtype
 from plotly.subplots import make_subplots
+from scipy import stats
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 
 # pdb.set_trace()
 # pdb.continue()
 
+# Exception handling for chained_assignment warning
+# https://stackoverflow.com/questions/47182183/pandas-chained-assignment-warning-exception-handling
+pd.options.mode.chained_assignment = None
+
 # Decision rules for categorical:
 # - If string
 # - If unique values make up less than 5% of total obs
 def continuous_or_categorical_result(data_frames, response_columns):
-    resp_string_check = isinstance(response_columns.values, str)
+    response_columns.fillna(0, inplace=True)
+
+    resp_string_check = is_string_dtype(response_columns)
     resp_unique_ratio = len(np.unique(response_columns.values)) / len(
         response_columns.values
     )
 
-    if resp_string_check or resp_unique_ratio < 0.05:
+    if resp_string_check or resp_unique_ratio < 0.00001:
         return "Categorical"
     else:
         return "Continuous"
 
+
 def continuous_or_categorical_predictor(predictor_data):
-    predictor_string_check = isinstance(predictor_data, str)
-    pred_unique_ratio = len(predictor_data.unique()) / len(predictor_data)
-    if predictor_string_check or pred_unique_ratio < 0.05:
+    predictor_string_check = is_string_dtype(predictor_data)
+    predictor_unique_ratio = len(predictor_data.unique()) / len(predictor_data)
+    if predictor_string_check or predictor_unique_ratio < 0.00001:
         return "Categorical"
     else:
         return "Continuous"
@@ -38,12 +53,8 @@ def continuous_or_categorical_predictor(predictor_data):
 
 def process_response(data_frames, response):
     # Check var type of response
-    # print("entering process_response")
     response_columns = data_frames[response]
-    # print(response_columns)
     response_var_type = continuous_or_categorical_result(data_frames, response_columns)
-    # print("Resp Var")
-    # print(response_var_type)
     if response_var_type == "Categorical":
         response_type = "Categorical"
 
@@ -52,8 +63,6 @@ def process_response(data_frames, response):
         file_name = "graphs/categorical_response.html"
         resp_plot.write_html(file=file_name, include_plotlyjs="cdn")
 
-        # print("Before processing")
-        # print(response_columns)
         # Encode
         response_columns = pd.Categorical(
             response_columns, categories=response_columns.unique()
@@ -62,9 +71,6 @@ def process_response(data_frames, response):
 
         response_columns = pd.DataFrame(response_columns, columns=[response])
         response_columns_uncoded = data_frames[response]
-
-        # print("After processing")
-        # print(response_columns)
 
     else:
         response_type = "Continuous"
@@ -80,6 +86,7 @@ def process_response(data_frames, response):
 
     return response_columns, response_type, response_mean, response_columns_uncoded
 
+
 def process_predictors(
     data_frames,
     predictor,
@@ -92,7 +99,6 @@ def process_predictors(
     # Fetch predictor columns from the data frames
     predictor_columns = predictor
     print("+++++process_predictors++++++++++++")
-    print(predictor_columns)
 
     # Generate a dummy result table with expected results
     results_columns = [
@@ -108,16 +114,14 @@ def process_predictors(
 
     # Create results from the dataframe using the result columns and predictor
     results = pd.DataFrame(columns=results_columns, index=predictor)
-    # print(results)
 
     # Loop over predictors
     for prediction_name, predictor_data in predictor_columns.items():
-        # print("++++NAME+++++++++++++")
-        # print(prediction_name)
-
+        print("++++NAME+++++++++++++")
+        print(prediction_name)
         # Decide cat or cont
         predictor_type = continuous_or_categorical_predictor(predictor_data)
-        # print(predictor_type)
+        print(predictor_type)
         if predictor_type == "Categorical":
             # Encode
             predictor_data = pd.Categorical(
@@ -125,25 +129,17 @@ def process_predictors(
             )
             predictor_data, pred_labels = pd.factorize(predictor_data)
             predictor_data = pd.DataFrame(predictor_data, columns=[prediction_name])
-            predictor_data_uncoded = data_frames[prediction_name]
-            # print("After processing")
-            # print(predictor_data)
+            # predictor_data_uncoded = data_frames[prediction_name]
         else:
-            predictor_data = predictor_data.astype(float)
             predictor_data = predictor_data.to_frame()
-            # print("After processing")
-            # print(predictor_data)
+
+        # data_frames = data_frames.drop(prediction_name, axis=1)
 
         # Bind response and predictor together again
         data_frames_c = pd.concat([response_columns, predictor_data], axis=1)
         data_frames_c.columns = [response, prediction_name]
 
         # Relationship plot and correlations
-        # print("response_type")
-        # print(response_type)
-        # print("predictor_type")
-        # print(predictor_type)
-
         if response_type == "Categorical" and predictor_type == "Categorical":
             relationship_matrix = confusion_matrix(predictor_data, response_columns)
             figure_relationship = go.Figure(
@@ -167,7 +163,7 @@ def process_predictors(
             )
         elif response_type == "Continuous" and predictor_type == "Categorical":
             figure_relationship = plotly_express.histogram(
-                data_frames_c, x=response, color=predictor_data_uncoded
+                data_frames_c, x=response, color=data_frames[prediction_name]
             )
             figure_relationship.update_layout(
                 title=f"Relationship Between {response} and {prediction_name}",
@@ -207,8 +203,6 @@ def process_predictors(
         # Regression
         print("Regression------------>")
         print(response_type)
-        # print(response_columns)
-        # print(predictor_data)
         if response_type == "Categorical":
             regression_model = sm.Logit(
                 response_columns, predictor_data, missing="drop"
@@ -248,7 +242,7 @@ def process_predictors(
         # Diff with mean of response (unweighted and weighted)
         # Get user input on number of mean diff bins to use
         if predictor_type == "Continuous":
-            bin_n = "3"
+            bin_n = "10"
             while isinstance(bin_n, int) is False or bin_n == "":
                 # bin_n = input(
                 #    f"\nEnter number of bins to use for difference with mean of response for {prediction_name}:\n"

@@ -8,13 +8,26 @@ from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
 
+
 def pre_processing(data_frames: pd.DataFrame) -> pd.DataFrame:
     data_frames.select_dtypes(include=["category", object]).columns
-    data_frames = data_frames.drop("class1", axis=1)
-    data_frames = data_frames.drop("class2", axis=1)
     data_frames = data_frames.replace("-", "0")
     data_frames = data_frames.replace("?", "0")
     data_frames = data_frames.replace("#DIV/0!", "0")
+    data_frames = data_frames.replace("FALSE", "0")
+    data_frames = data_frames.replace("TRUE", "1")
+    data_frames.columns = data_frames.columns.str.replace("/", "_")
+
+    data_frames = data_frames.drop("class1", axis=1)
+    data_frames = data_frames.drop("class2", axis=1)
+    # Drop the columns which contains only a single value. They bear no impact
+    # on the output
+    for col in data_frames.columns:
+        if len(data_frames[col].unique()) == 1:
+            data_frames.drop(col, inplace=True, axis=1)
+
+    data_frames = data_frames.dropna(axis=1, how="any")
+    data_frames = data_frames.drop_duplicates(subset=None, keep="first")
     data_frames["Scr_ip_bytes"] = data_frames["Scr_ip_bytes"].replace(
         "excel", "0", regex=True
     )
@@ -37,12 +50,12 @@ def load_file():
 
     data_frames = pre_processing(data_frames)
 
+    data_frames.to_csv("../data/preprocceded.csv", encoding="utf-8", index=False)
+
+    data_frames = pd.read_csv("../data/preprocceded.csv", low_memory=False)
+
     # This will constitute the feature list
     column_names = data_frames.columns.values.tolist()
-    # print(column_names)
-
-    # data_frames.head()
-    # data_frames.info()
 
     # Default response feature
     response_feature = "class3"
@@ -55,9 +68,7 @@ def load_file():
         pass
 
     prediction_variables = []
-    data_frames = data_frames.dropna(axis=1, how="any")
+
     prediction_variables = data_frames.drop(response_feature, axis=1)
 
     return data_frames, response_feature, prediction_variables
-
-

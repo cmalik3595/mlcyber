@@ -1,4 +1,5 @@
 import sys
+
 import numpy as np
 import pandas as pd
 import plotly.express as plotly_express
@@ -7,7 +8,6 @@ import statsmodels.api as sm
 from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import confusion_matrix
-
 
 
 def random_forest_importance(response_type, processed_predictor, predictor):
@@ -48,4 +48,3 @@ def results_table(results, importance):
         results.to_html(html_open, escape=False)
 
     return
-
