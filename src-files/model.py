@@ -29,8 +29,8 @@ def random_forest_importance(response_type, processed_predictor, predictor):
     # Fit random forest model
     model.fit(processed_predictor.iloc[:, 1:], processed_predictor.iloc[:, 0])
     feature_importance = pd.DataFrame(
-        model.feature_importances_,
-        columns=["Random Forest Importance"])
+        model.feature_importances_, columns=["Random Forest Importance"]
+    )
 
     return feature_importance
 

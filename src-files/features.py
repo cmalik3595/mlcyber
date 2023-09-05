@@ -320,7 +320,7 @@ def process_predictors(
             )
 
         # Add to results table
-        #results.loc[prediction_name] = pd.Series(
+        # results.loc[prediction_name] = pd.Series(
         series = pd.Series(
             {
                 "Response": response,
@@ -332,8 +332,9 @@ def process_predictors(
                 "Diff Mean of Response (Unweighted)": mean_unweighted,
                 "Diff Mean of Response (Weighted)": mean_weighted,
                 "Diff Mean Plot": mean_diff,
-            }, name=prediction_name
+            },
+            name=prediction_name,
         )
-        results=results.append(series)
+        results = results.append(series)
 
     return processed_predictor, results
