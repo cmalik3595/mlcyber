@@ -37,6 +37,7 @@ def main():
         response_type, processed_predictor, predictor
     )
 
+    print("\nMain importance:\n", importance)
     model.results_table(results, importance)
     return
 

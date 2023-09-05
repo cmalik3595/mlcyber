@@ -113,7 +113,8 @@ def process_predictors(
     ]
 
     # Create results from the dataframe using the result columns and predictor
-    results = pd.DataFrame(columns=results_columns, index=predictor)
+    #results = pd.DataFrame(columns=results_columns, index=predictor)
+    results = pd.DataFrame(columns=results_columns)
 
     # Loop over predictors
     for prediction_name, predictor_data in predictor_columns.items():
@@ -325,7 +326,8 @@ def process_predictors(
             )
 
         # Add to results table
-        results.loc[prediction_name] = pd.Series(
+        #results.loc[prediction_name] = pd.Series(
+        series = pd.Series(
             {
                 "Response": response,
                 "Predictor Type": relationship_link,
@@ -335,7 +337,8 @@ def process_predictors(
                 "Diff Mean of Response (Unweighted)": mean_unweighted,
                 "Diff Mean of Response (Weighted)": mean_weighted,
                 "Diff Mean Plot": mean_diff,
-            }
+            }, name=prediction_name
         )
+        results=results.append(series)
 
     return processed_predictor, results

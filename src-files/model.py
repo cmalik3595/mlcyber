@@ -38,8 +38,10 @@ def random_forest_importance(response_type, processed_predictor, predictor):
 
 
 def results_table(results, importance):
-    # print("\nresults:\n", results)
-    # print(importance)
+    print(importance)
+    with open("./graphs/importance.html", "w") as html_open:
+        importance.to_html(html_open, escape=False)
+
     results.reset_index(inplace=True, drop=True)
     results = pd.concat([results, importance], axis=1)
     # print("\nresults:\n", results)
