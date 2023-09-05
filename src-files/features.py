@@ -98,11 +98,11 @@ def process_predictors(
 ):
     # Fetch predictor columns from the data frames
     predictor_columns = predictor
-    print("+++++process_predictors++++++++++++")
 
     # Generate a dummy result table with expected results
     results_columns = [
         "Response",
+        "Prediction name",
         "Predictor Type",
         "t Score",
         "p Value",
@@ -113,16 +113,12 @@ def process_predictors(
     ]
 
     # Create results from the dataframe using the result columns and predictor
-    #results = pd.DataFrame(columns=results_columns, index=predictor)
     results = pd.DataFrame(columns=results_columns)
 
     # Loop over predictors
     for prediction_name, predictor_data in predictor_columns.items():
-        print("++++NAME+++++++++++++")
-        print(prediction_name)
         # Decide cat or cont
         predictor_type = continuous_or_categorical_predictor(predictor_data)
-        print(predictor_type)
         if predictor_type == "Categorical":
             # Encode
             predictor_data = pd.Categorical(
@@ -202,8 +198,6 @@ def process_predictors(
         )
 
         # Regression
-        print("Regression------------>")
-        print(response_type)
         if response_type == "Categorical":
             regression_model = sm.Logit(
                 response_columns, predictor_data, missing="drop"
@@ -330,6 +324,7 @@ def process_predictors(
         series = pd.Series(
             {
                 "Response": response,
+                "Prediction name": prediction_name,
                 "Predictor Type": relationship_link,
                 "t Score": t_score,
                 "p Value": p_value,
