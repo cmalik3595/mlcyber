@@ -4,42 +4,64 @@ import features
 import loaddata
 import model
 import numpy as np
-import pandas as pd
 
 
-def main():
+def main(in_file_name, in_response_type, in_bins):
     # https://medium.com/@debanjana.bhattacharyya9818/numpy-random-seed-101-explained-2e96ee3fd90b
-    # Seed the generator
-    np.random.seed(seed=123)
+    np.random.seed(seed=1234)
+    data_frames, response, predicts = loaddata.load_file()
 
-    # Load the file and fetch response feature
-    data_frames, response, predictor = loaddata.load_file()
-
-    # process response
     (
         response_columns,
         response_type,
         response_mean,
         response_columns_uncoded,
     ) = features.process_response(data_frames, response)
-
-    (processed_predictor, results) = features.process_predictors(
+    (
+        predictor_proc,
+        results_response_x_predictor,
+        predicts_columns,
+        num_bins,
+    ) = features.process_predictors(
         data_frames,
-        predictor,
+        predicts,
         response,
         response_columns,
         response_type,
         response_mean,
         response_columns_uncoded,
+        in_bins,
+    )
+    one_way_importance = model.random_forest_importance(
+        response_type, predictor_proc, predicts
     )
 
-    importance = model.random_forest_importance(
-        response_type, processed_predictor, predictor
+    (
+        results_brute_force,
+        results_predictor_correlation,
+    ) = features.process_predictors_two_way(
+        response, predicts_columns, num_bins, response_columns, response_mean
     )
 
-    model.results_table(results, importance)
+    features.correlation_matrix(results_predictor_correlation, predicts_columns)
+
+    model.results_table(
+        results_response_x_predictor,
+        results_brute_force,
+        results_predictor_correlation,
+        one_way_importance,
+    )
     return
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    if len(sys.argv) < 4:
+        print("\nUsage:")
+        print("python3 main.py <file_path> <final response name> <number of bins>")
+        print("Example: python3 main.py ../data/dataset.csv class3 10")
+        sys.exit()
+
+    in_file = sys.argv[1]
+    in_response = sys.argv[2]
+    in_bins = sys.argv[3]
+    sys.exit(main(in_file, in_response, in_bins))

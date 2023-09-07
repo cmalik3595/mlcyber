@@ -1,13 +1,5 @@
-import sys
-
-import numpy as np
 import pandas as pd
-import plotly.express as plotly_express
-import plotly.graph_objects as go
-import statsmodels.api as sm
-from plotly.subplots import make_subplots
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.metrics import confusion_matrix
 
 
 def random_forest_importance(response_type, processed_predictor, predictor):
@@ -35,14 +27,31 @@ def random_forest_importance(response_type, processed_predictor, predictor):
     return feature_importance
 
 
-def results_table(results, importance):
-    with open("./graphs/importance.html", "w") as html_open:
-        importance.to_html(html_open, escape=False)
+def results_table(
+    results_response_x_predictor,
+    results_brute_force,
+    results_predictor_correlation,
+    one_way_importance,
+):
+    with open("./plots/importance.html", "w") as html_open:
+        one_way_importance.to_html(html_open, escape=False)
 
-    results.reset_index(inplace=True, drop=True)
-    results = pd.concat([results, importance], axis=1)
+    results_response_x_predictor.reset_index(inplace=True, drop=True)
+    results_response_x_predictor = pd.concat(
+        [results_response_x_predictor, one_way_importance], axis=1
+    )
 
-    with open("./graphs/results.html", "w") as html_open:
-        results.to_html(html_open, escape=False)
+    results_response_x_predictor = results_response_x_predictor.sort_values(
+        ["Correlation"], ascending=False
+    )
+
+    with open("./plots/results_response_x_predictor.html", "w") as html_open:
+        results_response_x_predictor.to_html(html_open, escape=False)
+
+    with open("./plots/results_brute_force.html", "w") as html_open:
+        results_brute_force.to_html(html_open, escape=False)
+
+    with open("./plots/results_predictor_correlation.html", "w") as html_open:
+        results_predictor_correlation.to_html(html_open, escape=False)
 
     return

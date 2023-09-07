@@ -3,11 +3,6 @@ import os.path
 
 import pandas as pd
 
-# import pdb
-from plotly.subplots import make_subplots
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.metrics import confusion_matrix
-
 
 def pre_processing(data_frames: pd.DataFrame) -> pd.DataFrame:
     data_frames.select_dtypes(include=["category", object]).columns
@@ -40,8 +35,8 @@ def load_file():
     while not os.path.exists(file_path):
         file_path = input("\nEnter complete file path for the input:\n")
     # Make a folder to store the plots
-    if not os.path.exists("graphs"):
-        os.makedirs("graphs")
+    if not os.path.exists("plots"):
+        os.makedirs("plots")
 
     if ".xlsx" in file_path:
         data_frames = pd.read_excel("Test.xlsx")
