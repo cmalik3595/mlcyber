@@ -185,7 +185,7 @@ def random_forest_importance(response_type, processed_predictor, predictor):
     feature_importance = pd.DataFrame(
         model.feature_importances_, columns=["Random Forest Importance"]
     )
-    with open("./plots/random_forrest_importance.html", "w") as html_open:
+    with open("./plots/importance/random_forrest_importance.html", "w") as html_open:
         feature_importance.to_html(html_open, escape=False)
 
     return feature_importance
@@ -252,8 +252,6 @@ def post_process_data(results_response_x_predictor, processed_predictor):
     t_score_threshold=2.0
     correlation_thres=0.0016
     rf_importance_threshold=0.0003
-
-    print(processed_predictor)
 
     for index, row in results_response_x_predictor.iterrows():
         if float(row["p Value"]) > p_val_threshold :

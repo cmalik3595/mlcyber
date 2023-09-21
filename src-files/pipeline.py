@@ -3,6 +3,7 @@
 # import statistics
 
 import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from sklearn.ensemble import (
@@ -23,7 +24,10 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.svm import LinearSVC
 from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
-
+from sklearn.metrics import classification_report
+from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
+from sklearn.experimental import enable_halving_search_cv  # noqa
+from sklearn.model_selection import HalvingGridSearchCV
 
 import xgboost
 
@@ -40,12 +44,52 @@ from sklearn.neighbors import KNeighborsClassifier
 
 
 from sklearn.metrics import f1_score as f1_score_rep
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, recall_score, make_scorer, average_precision_score, precision_score, roc_auc_score
+from sklearn.model_selection import train_test_split
 
+from sklearn.model_selection import KFold
+from sklearn.model_selection import RepeatedKFold
 
-TSS = TimeSeriesSplit(n_splits=10, max_train_size=None)
+KF = KFold(n_splits=2, shuffle=True, random_state=True)
+RKF = RepeatedKFold(n_splits=2, n_repeats=2, random_state=2652124)
+TSS = TimeSeriesSplit(n_splits=2, max_train_size=None)
+
+scorings = set(['accuracy', 'average_precision', 'f1_micro', 'f1_macro', 'precision', 'roc_auc'])
+"""
+Default Hyperparams : RandomForestClassifier
+{'bootstrap': True, 'ccp_alpha': 0.0, 'class_weight': None, 'criterion': 'gini', 'max_depth': None, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'max_samples': None, 'min_impurity_decrease': 0.0, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 100, 'n_jobs': None, 'oob_score': False, 'random_state': None, 'verbose': 0, 'warm_start': False}
+"""
+n_estimators = [int(x) for x in np.linspace(start = 25, stop = 200, num = 5)]
+max_features = ['sqrt', 'log2', None]
+max_depth = [int(x) for x in np.linspace(3, 10, num = 5)]
+max_depth.append(None)
+max_leaf_nodes = [int(x) for x in np.linspace(3, 10, num = 5)]
+max_leaf_nodes.append(None)
+min_samples_split = [2, 5, 10]
+min_samples_leaf = [1, 2, 4]
+bootstrap = [True, False]
+random_grid = {'n_estimators': n_estimators,
+               'max_features': max_features,
+               'max_depth': max_depth,
+               'min_samples_split': min_samples_split,
+               'min_samples_leaf': min_samples_leaf,
+               'max_leaf_nodes': max_leaf_nodes,
+               'bootstrap': bootstrap}
+
+rfclassifier_params_grid = {
+    'n_estimators': [50, 100, 150, 200],
+    'max_features': ['sqrt', 'log2', None],
+    'max_depth': [3, 6, 9, None],
+    'max_leaf_nodes': [3, 6, 9, None],
+}
 
 PIPELINES = [
+    Pipeline(
+        [
+            ("scaler", StandardScaler()),
+            ("RandomForestClassifier", RandomForestClassifier()),
+        ],
+    ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -73,12 +117,6 @@ PIPELINES = [
         [
             ("scaler", StandardScaler()),
             ("GaussianNB", GaussianNB()),
-        ],
-    ),
-    Pipeline(
-        [
-            ("scaler", StandardScaler()),
-            ("RandomForestClassifier", RandomForestClassifier()),
         ],
     ),
     Pipeline(
@@ -126,17 +164,10 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("SVC", SVC(kernel='rbf', C = 1)),
-        ],
-    ),
-    Pipeline(
-        [
-            ("scaler", StandardScaler()),
             ("MLPClassifier", MLPClassifier(random_state=1, max_iter=100)),
         ],
     ),
 ]
-
 
 def try_models(
     X_: pd.DataFrame,
@@ -144,6 +175,9 @@ def try_models(
     feature_sets,
     path,
     title,
+    split_type,
+    hyper_tuning_en,
+    op_type,
 ) -> None:
     result_df = pd.DataFrame()
     for pass_, feature_set in enumerate(feature_sets):
@@ -152,6 +186,10 @@ def try_models(
 
         for pipeline in PIPELINES:
             name = pipeline.steps[-1][0]
+            
+            print('Parameters currently in use for :', name)
+            print(pipeline[name].get_params())
+
             results[name] = dict()
             results[name]["scores"] = list()
             results[name]["accuracy_scores"] = list()
@@ -161,7 +199,18 @@ def try_models(
             results[name]["probs"] = list()
             results[name]["confusion"] = list()
 
-            for _, split in enumerate(TSS.split(X)):
+            #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1, stratify=y)
+            if split_type == "tss":
+                print("Time series splitting")
+                enumeration_data = TSS.split(X)
+            elif split_type == "kf":
+                print("K-Fold splitting")
+                enumeration_data = KF.split(X)
+            else:
+                print("Repeated K-Fold splitting")
+                enumeration_data = RKF.split(X)
+
+            for _, split in enumerate(enumeration_data):
                 train_index, test_index = split
                 X_train, X_test = X.iloc[train_index], X.iloc[test_index]
                 y_train, y_test = y.iloc[train_index], y.iloc[test_index]
@@ -174,6 +223,33 @@ def try_models(
                 results[name]["f1_score_macro"] += [f1_score_rep(y_test, y_pred, average="macro")]
                 results[name]["scores"] += [pipeline.score(X_test, y_test)]
 
+                if hyper_tuning_en == "hyper":
+                    print(name)
+                    print(classification_report(y_pred, y_test))
+                    halfgridsearch = HalvingGridSearchCV(pipeline[name], param_grid=rfclassifier_params_grid, resource='n_samples', cv=3,  max_resources=15,random_state=0, n_jobs = 2, scoring='accuracy')
+                    print("\nHalfGridSearchCV:\n",halfgridsearch.get_params());
+                    halfgridsearch.fit(X_train, y_train)
+                    print("\n The best estimator across ALL searched params:\n", halfgridsearch.best_estimator_)
+                    print("\n The best score across ALL searched params:\n", halfgridsearch.best_score_)
+                    print("\n The best parameters across ALL searched params:\n", halfgridsearch.best_params_)
+                    #print("\n", halfgridsearch.cv_results_)
+                    
+                    grid_search = GridSearchCV(pipeline[name], param_grid=rfclassifier_params_grid, cv = 3,  n_jobs = 2, scoring='accuracy')
+                    print("\nGridSearchCV:\n",grid_search.get_params());
+                    grid_search.fit(X_train, y_train)
+                    print("\n The best estimator across ALL searched params:\n", grid_search.best_estimator_)
+                    print("\n The best score across ALL searched params:\n", grid_search.best_score_)
+                    print("\n The best parameters across ALL searched params:\n", grid_search.best_params_)
+                    #print("\n",grid_search.cv_results_)
+                    
+                    random_search = RandomizedSearchCV(pipeline[name],param_distributions=random_grid,n_iter = 100, cv = 3,  random_state=42, n_jobs = 2, scoring='accuracy')
+                    print("\nRandomizedSearchCV:\n", random_search.get_params());
+                    random_search.fit(X_train, y_train)
+                    print("\n The best estimator across ALL searched params:\n", random_search.best_estimator_)
+                    print("\n The best score across ALL searched params:\n", random_search.best_score_)
+                    print("\n The best parameters across ALL searched params:\n", random_search.best_params_)
+                    #print("\n",random_search.cv_results_)
+
                 if hasattr(pipeline, "predict_proba"):
                     results[name]["probs"] += [
                         pipeline.predict_proba(
@@ -184,21 +260,23 @@ def try_models(
                     results[name]["model_probs"] = None
                 results[name]["confusion"] += [
                     confusion_matrix(y_test, y_pred),
-                ]
-
-        print("###########################")
-        print(name)
-        print("scores:", results[name]["scores"])
-        print("Accuracy: ", results[name]["accuracy_scores"])
-        print("Micro F1 Score: ",results[name]["f1_score_micro"])
-        print("Macro F1 Score: ", results[name]["f1_score_macro"])
-        print("###########################")
-
+                    ]
+            print("############ Results Start ###############")
+            print(name)
+            print("scores:", results[name]["scores"])
+            print("Accuracy: ", results[name]["accuracy_scores"])
+            print("Micro F1 Score: ",results[name]["f1_score_micro"])
+            print("Macro F1 Score: ", results[name]["f1_score_macro"])
+            print("########### Results End ################")
+            final_results = pd.DataFrame(results[name])
+            filename =  op_type + name + ".csv"
+            final_results.to_csv( filename, index=False)
+                
         for model, model_dict in results.items():
             for run, score in enumerate(model_dict["scores"]):
                 row = {
                     "model": model,
-                    "feature_set": ", ".join(feature_set),
+                    "feature_set": feature_set,
                     "score": score,
                 }
                 result_df = result_df.append(row, ignore_index=True)
@@ -231,7 +309,7 @@ def try_models(
                     data=data,
                     layout=layout,
                 )
-                fig.write_html(f"{path}/plots/{pass_}_{model}_cm_{run}.html")
+                fig.write_html(f"{path}/{pass_}_{model}_cm_{run}_{op_type}.html")
 
     fig = px.box(
         result_df,
@@ -244,14 +322,76 @@ def try_models(
     fig.add_shape(
         type="line",
         x0=0,
-        y0=y["class3"],
+        y0=y,
         x1=1,
-        y1=y["class3"],
+        y1=y,
         line={"color": "black"},
         xref="paper",
         yref="y",
     )
-    fig.write_html(f"{path}/models.html")
+
+    fig.write_html(f"{path}/score_models_{op_type}.html")
+    """
+    fig = px.box(
+        result_df,
+        x="feature_set",
+        y="accuracy_scores",
+        color="model",
+        title=f"Model scores from {title} features",
+    )
+
+    fig.add_shape(
+        type="line",
+        x0=0,
+        y0=y,
+        x1=1,
+        y1=y,
+        line={"color": "black"},
+        xref="paper",
+        yref="y",
+    )
+
+    fig.write_html(f"{path}/accuracy_models_{op_type}.html")
+
+    fig = px.box(
+        result_df,
+        x="feature_set",
+        y="f1_score_micro",
+        color="model",
+        title=f"Model scores from {title} features",
+    )
+
+    fig.add_shape(
+        type="line",
+        x0=0,
+        y0=y,
+        x1=1,
+        y1=y,
+        line={"color": "black"},
+        xref="paper",
+        yref="y",
+    )
+    fig.write_html(f"{path}/f1_micro_models_{op_type}.html")
+    fig = px.box(
+        result_df,
+        x="feature_set",
+        y="f1_score_macro",
+        color="model",
+        title=f"Model scores from {title} features",
+    )
+
+    fig.add_shape(
+        type="line",
+        x0=0,
+        y0=y,
+        x1=1,
+        y1=y,
+        line={"color": "black"},
+        xref="paper",
+        yref="y",
+    )
+    fig.write_html(f"{path}/f1_macro_models_{op_type}.html")
+    """
     return
 
 

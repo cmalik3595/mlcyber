@@ -1,5 +1,4 @@
 import sys
-
 import pandas as pd
 import features
 import loaddata
@@ -8,7 +7,7 @@ import numpy as np
 import pipeline
 
 
-def main(in_file_name, in_response_type, in_bins):
+def main(in_file_name, in_response_type, in_bins, split_type, hyper_tuning_en):
     # https://medium.com/@debanjana.bhattacharyya9818/numpy-random-seed-101-explained-2e96ee3fd90b
     np.random.seed(seed=1234)
     data_frames, response, predicts = loaddata.load_file()
@@ -83,41 +82,50 @@ def main(in_file_name, in_response_type, in_bins):
     
     print("Before")
     print(predictor_proc.shape)
-    with open("./plots/before_trimming.html", "w") as html_open:
-        predictor_proc.to_html(html_open, escape=False)
+    predictor_proc.to_csv("plots/before-trim-prepro.csv", encoding="utf-8", index=False)
+    results_response_x_predictor.to_csv("plots/before-results-prepro.csv", encoding="utf-8", index=False)
 
-    trimmed_features0 = [predictor_proc.columns]
+    preprocedded_features = [predictor_proc.columns]
 
     pipeline.try_models(
         predictor_proc.iloc[:, 1:],
         pd.Series(predictor_proc.iloc[:, 0]),
-        trimmed_features0,
+        [
+            preprocedded_features,
+        ],
         "./plots/before_trimming",
         "Pipeline",
+        split_type,
+        hyper_tuning_en,
+        "B4",
     )
 
     (predictor_proc) = model.post_process_data(results_response_x_predictor, predictor_proc)
     
     print("After")
     print(predictor_proc.shape)
-    with open("./plots/after_trimming.html", "w") as html_open:
-        predictor_proc.to_html(html_open, escape=False)
+    predictor_proc.to_csv("plots/after-trim-prepro.csv", encoding="utf-8", index=False)
 
-    trimmed_features1 = [predictor_proc.columns]
+    trimmed_features = [predictor_proc.columns]
 
     pipeline.try_models(
         predictor_proc.iloc[:, 1:],
         pd.Series(predictor_proc.iloc[:, 0]),
-        trimmed_features1,
+        [
+            trimmed_features,
+        ],
         "./plots/after_trimming",
         "Pipeline",
+        split_type,
+        hyper_tuning_en,
+        "Af"
     )
 
     return
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 6:
         print("\nUsage:")
         print("python3 main.py <file_path> <final response name> <number of bins>")
         print("Example: python3 main.py ../data/dataset.csv class3 10")
@@ -126,4 +134,6 @@ if __name__ == "__main__":
     in_file = sys.argv[1]
     in_response = sys.argv[2]
     in_bins = sys.argv[3]
-    sys.exit(main(in_file, in_response, in_bins))
+    split_type = sys.argv[4]
+    hyper_tuning_en = sys.argv[5]
+    sys.exit(main(in_file, in_response, in_bins, split_type, hyper_tuning_en))
