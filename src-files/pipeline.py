@@ -54,35 +54,6 @@ KF = KFold(n_splits=2, shuffle=True, random_state=True)
 RKF = RepeatedKFold(n_splits=2, n_repeats=2, random_state=2652124)
 TSS = TimeSeriesSplit(n_splits=2, max_train_size=None)
 
-scorings = set(['accuracy', 'average_precision', 'f1_micro', 'f1_macro', 'precision', 'roc_auc'])
-"""
-Default Hyperparams : RandomForestClassifier
-{'bootstrap': True, 'ccp_alpha': 0.0, 'class_weight': None, 'criterion': 'gini', 'max_depth': None, 'max_features': 'sqrt', 'max_leaf_nodes': None, 'max_samples': None, 'min_impurity_decrease': 0.0, 'min_samples_leaf': 1, 'min_samples_split': 2, 'min_weight_fraction_leaf': 0.0, 'n_estimators': 100, 'n_jobs': None, 'oob_score': False, 'random_state': None, 'verbose': 0, 'warm_start': False}
-"""
-n_estimators = [int(x) for x in np.linspace(start = 25, stop = 200, num = 5)]
-max_features = ['sqrt', 'log2', None]
-max_depth = [int(x) for x in np.linspace(3, 10, num = 5)]
-max_depth.append(None)
-max_leaf_nodes = [int(x) for x in np.linspace(3, 10, num = 5)]
-max_leaf_nodes.append(None)
-min_samples_split = [2, 5, 10]
-min_samples_leaf = [1, 2, 4]
-bootstrap = [True, False]
-random_grid = {'n_estimators': n_estimators,
-               'max_features': max_features,
-               'max_depth': max_depth,
-               'min_samples_split': min_samples_split,
-               'min_samples_leaf': min_samples_leaf,
-               'max_leaf_nodes': max_leaf_nodes,
-               'bootstrap': bootstrap}
-
-rfclassifier_params_grid = {
-    'n_estimators': [50, 100, 150, 200],
-    'max_features': ['sqrt', 'log2', None],
-    'max_depth': [3, 6, 9, None],
-    'max_leaf_nodes': [3, 6, 9, None],
-}
-
 PIPELINES = [
     Pipeline(
         [
@@ -223,18 +194,20 @@ def try_models(
                 results[name]["f1_score_macro"] += [f1_score_rep(y_test, y_pred, average="macro")]
                 results[name]["scores"] += [pipeline.score(X_test, y_test)]
 
-                if hyper_tuning_en == "hyper":
+                if hyper_tuning_en == "half-gradient":
                     print(name)
                     print(classification_report(y_pred, y_test))
-                    halfgridsearch = HalvingGridSearchCV(pipeline[name], param_grid=rfclassifier_params_grid, resource='n_samples', cv=3,  max_resources=15,random_state=0, n_jobs = 2, scoring='accuracy')
+                    grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
+                    halfgridsearch = HalvingGridSearchCV(pipeline[name], param_grid=grid_map, resource='n_samples', cv=3,  max_resources=15,random_state=0, n_jobs = 2, scoring='accuracy')
                     print("\nHalfGridSearchCV:\n",halfgridsearch.get_params());
                     halfgridsearch.fit(X_train, y_train)
                     print("\n The best estimator across ALL searched params:\n", halfgridsearch.best_estimator_)
                     print("\n The best score across ALL searched params:\n", halfgridsearch.best_score_)
                     print("\n The best parameters across ALL searched params:\n", halfgridsearch.best_params_)
                     #print("\n", halfgridsearch.cv_results_)
-                    
-                    grid_search = GridSearchCV(pipeline[name], param_grid=rfclassifier_params_grid, cv = 3,  n_jobs = 2, scoring='accuracy')
+                elif hyper_tuning_en == "gradient":
+                    grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
+                    grid_search = GridSearchCV(pipeline[name], param_grid=grid_map, cv = 3,  n_jobs = 2, scoring='accuracy')
                     print("\nGridSearchCV:\n",grid_search.get_params());
                     grid_search.fit(X_train, y_train)
                     print("\n The best estimator across ALL searched params:\n", grid_search.best_estimator_)
@@ -242,7 +215,9 @@ def try_models(
                     print("\n The best parameters across ALL searched params:\n", grid_search.best_params_)
                     #print("\n",grid_search.cv_results_)
                     
-                    random_search = RandomizedSearchCV(pipeline[name],param_distributions=random_grid,n_iter = 100, cv = 3,  random_state=42, n_jobs = 2, scoring='accuracy')
+                elif hyper_tuning_en == "random":
+                    grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
+                    random_search = RandomizedSearchCV(pipeline[name],param_distributions=grid_map,n_iter = 100, cv = 3,  random_state=42, n_jobs = 2, scoring='accuracy')
                     print("\nRandomizedSearchCV:\n", random_search.get_params());
                     random_search.fit(X_train, y_train)
                     print("\n The best estimator across ALL searched params:\n", random_search.best_estimator_)
@@ -268,9 +243,9 @@ def try_models(
             print("Micro F1 Score: ",results[name]["f1_score_micro"])
             print("Macro F1 Score: ", results[name]["f1_score_macro"])
             print("########### Results End ################")
-            final_results = pd.DataFrame(results[name])
-            filename =  op_type + name + ".csv"
-            final_results.to_csv( filename, index=False)
+            #final_results = pd.DataFrame(results[name])
+            #filename =  op_type + name + ".csv"
+            #final_results.to_csv( filename, index=False)
                 
         for model, model_dict in results.items():
             for run, score in enumerate(model_dict["scores"]):
