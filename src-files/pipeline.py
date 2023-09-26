@@ -6,6 +6,9 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
+import xgboost
+import hyperparams
+
 from sklearn.ensemble import (
     AdaBoostClassifier,
     GradientBoostingClassifier,
@@ -29,7 +32,6 @@ from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
 from sklearn.experimental import enable_halving_search_cv  # noqa
 from sklearn.model_selection import HalvingGridSearchCV
 
-import xgboost
 
 from sklearn.datasets import make_regression
 from sklearn.linear_model import LinearRegression
@@ -58,7 +60,7 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("RandomForestClassifier", RandomForestClassifier()),
+            ("RandomForestClassifier", RandomForestClassifier(n_jobs=-1)),
         ],
     ),
     Pipeline(
@@ -68,7 +70,8 @@ PIPELINES = [
                 "LogisticRegression",
                 LogisticRegression(
                     multi_class="multinomial",
-                    max_iter = 1500
+                    max_iter = 1500,
+                    n_jobs=-1
                 ),
             ),
         ],
@@ -93,7 +96,7 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("XGBClassifier", XGBClassifier()),
+            ("XGBClassifier", XGBClassifier(n_jobs=-1)),
         ],
     ),
     Pipeline(
@@ -123,7 +126,7 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("KNeighborsClassifier", KNeighborsClassifier(n_neighbors=3)),
+            ("KNeighborsClassifier", KNeighborsClassifier(n_neighbors=3,n_jobs=-1)),
         ],
     ),
     Pipeline(
@@ -158,8 +161,8 @@ def try_models(
         for pipeline in PIPELINES:
             name = pipeline.steps[-1][0]
             
-            print('Parameters currently in use for :', name)
-            print(pipeline[name].get_params())
+            #print('Parameters currently in use for :', name)
+            #print(pipeline[name].get_params())
 
             results[name] = dict()
             results[name]["scores"] = list()
@@ -172,13 +175,13 @@ def try_models(
 
             #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1, stratify=y)
             if split_type == "tss":
-                print("Time series splitting")
+                #print("Time series splitting")
                 enumeration_data = TSS.split(X)
-            elif split_type == "kf":
-                print("K-Fold splitting")
+            elif split_type == "kfold":
+                #print("K-Fold splitting")
                 enumeration_data = KF.split(X)
             else:
-                print("Repeated K-Fold splitting")
+                #print("Repeated K-Fold splitting")
                 enumeration_data = RKF.split(X)
 
             for _, split in enumerate(enumeration_data):
@@ -198,32 +201,42 @@ def try_models(
                     print(name)
                     print(classification_report(y_pred, y_test))
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
-                    halfgridsearch = HalvingGridSearchCV(pipeline[name], param_grid=grid_map, resource='n_samples', cv=3,  max_resources=15,random_state=0, n_jobs = 2, scoring='accuracy')
-                    print("\nHalfGridSearchCV:\n",halfgridsearch.get_params());
-                    halfgridsearch.fit(X_train, y_train)
-                    print("\n The best estimator across ALL searched params:\n", halfgridsearch.best_estimator_)
-                    print("\n The best score across ALL searched params:\n", halfgridsearch.best_score_)
-                    print("\n The best parameters across ALL searched params:\n", halfgridsearch.best_params_)
-                    #print("\n", halfgridsearch.cv_results_)
+                    if len(grid_map):
+                        halfgridsearch = HalvingGridSearchCV(pipeline[name], param_grid=grid_map, resource='n_samples', cv=3,  max_resources=15,random_state=0, n_jobs = -1, scoring='accuracy')
+                        #print("\nHalfGridSearchCV:\n",halfgridsearch.get_params());
+                        halfgridsearch.fit(X_train, y_train)
+                        print("\n The best estimator across ALL searched params:\n", halfgridsearch.best_estimator_)
+                        print("\n The best score across ALL searched params:\n", halfgridsearch.best_score_)
+                        print("\n The best parameters across ALL searched params:\n", halfgridsearch.best_params_)
+                        #print("\n", halfgridsearch.cv_results_)
+                    else:
+                        print("list is empty for : ", name)
+
                 elif hyper_tuning_en == "gradient":
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
-                    grid_search = GridSearchCV(pipeline[name], param_grid=grid_map, cv = 3,  n_jobs = 2, scoring='accuracy')
-                    print("\nGridSearchCV:\n",grid_search.get_params());
-                    grid_search.fit(X_train, y_train)
-                    print("\n The best estimator across ALL searched params:\n", grid_search.best_estimator_)
-                    print("\n The best score across ALL searched params:\n", grid_search.best_score_)
-                    print("\n The best parameters across ALL searched params:\n", grid_search.best_params_)
-                    #print("\n",grid_search.cv_results_)
+                    if len(grid_map):
+                        grid_search = GridSearchCV(pipeline[name], param_grid=grid_map, cv = 3,  n_jobs = -1, scoring='accuracy')
+                        #print("\nGridSearchCV:\n",grid_search.get_params());
+                        grid_search.fit(X_train, y_train)
+                        print("\n The best estimator across ALL searched params:\n", grid_search.best_estimator_)
+                        print("\n The best score across ALL searched params:\n", grid_search.best_score_)
+                        print("\n The best parameters across ALL searched params:\n", grid_search.best_params_)
+                        #print("\n",grid_search.cv_results_)
+                    else:
+                        print("list is empty for : ", name)
                     
                 elif hyper_tuning_en == "random":
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
-                    random_search = RandomizedSearchCV(pipeline[name],param_distributions=grid_map,n_iter = 100, cv = 3,  random_state=42, n_jobs = 2, scoring='accuracy')
-                    print("\nRandomizedSearchCV:\n", random_search.get_params());
-                    random_search.fit(X_train, y_train)
-                    print("\n The best estimator across ALL searched params:\n", random_search.best_estimator_)
-                    print("\n The best score across ALL searched params:\n", random_search.best_score_)
-                    print("\n The best parameters across ALL searched params:\n", random_search.best_params_)
-                    #print("\n",random_search.cv_results_)
+                    if len(grid_map):
+                        random_search = RandomizedSearchCV(pipeline[name],param_distributions=grid_map,n_iter = 10, cv = 2,  random_state=12, n_jobs = -1, scoring='accuracy')
+                        #print("\nRandomizedSearchCV:\n", random_search.get_params());
+                        random_search.fit(X_train, y_train)
+                        print("\n The best estimator across ALL searched params:\n", random_search.best_estimator_)
+                        print("\n The best score across ALL searched params:\n", random_search.best_score_)
+                        print("\n The best parameters across ALL searched params:\n", random_search.best_params_)
+                        #print("\n",random_search.cv_results_)
+                    else:
+                        print("list is empty for : ", name)
 
                 if hasattr(pipeline, "predict_proba"):
                     results[name]["probs"] += [
