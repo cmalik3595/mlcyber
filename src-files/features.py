@@ -117,10 +117,10 @@ def process_predictors(
     ]
     results_response_x_predictor = pd.DataFrame(
         columns=results_response_x_predictor_columns
-        )
+    )
     results_response_x_predictor_indexed = pd.DataFrame(
-            columns=results_response_x_predictor_columns, index=predicts
-            )
+        columns=results_response_x_predictor_columns, index=predicts
+    )
 
     print("\nSelected bins:\n", num_bins)
 
@@ -376,24 +376,32 @@ def process_predictors(
         results_response_x_predictor = results_response_x_predictor.append(series)
 
         results_response_x_predictor_indexed.loc[predictor_name] = pd.Series(
-                {
-                    "Response": response,
-                    "Predictor name": predictor_name,
-                    "Predictor Type": relate_link,
-                    "Correlation": corr,
-                    "t Score": t_score,
-                    "p Value": p_value,
-                    "Regression Plot": reg_link,
-                    "Diff Mean of Response (Unweighted)": mean_unweighted,
-                    "Diff Mean of Response (Weighted)": mean_weighted,
-                    "Diff Mean Plot": diff_link,
-                    }
-                )
-        results_response_x_predictor_indexed = results_response_x_predictor_indexed.sort_values(
+            {
+                "Response": response,
+                "Predictor name": predictor_name,
+                "Predictor Type": relate_link,
+                "Correlation": corr,
+                "t Score": t_score,
+                "p Value": p_value,
+                "Regression Plot": reg_link,
+                "Diff Mean of Response (Unweighted)": mean_unweighted,
+                "Diff Mean of Response (Weighted)": mean_weighted,
+                "Diff Mean Plot": diff_link,
+            }
+        )
+        results_response_x_predictor_indexed = (
+            results_response_x_predictor_indexed.sort_values(
                 ["Correlation"], ascending=False
-                )
+            )
+        )
 
-    return predictor_proc, results_response_x_predictor, predicts_columns, num_bins, results_response_x_predictor_indexed
+    return (
+        predictor_proc,
+        results_response_x_predictor,
+        predicts_columns,
+        num_bins,
+        results_response_x_predictor_indexed,
+    )
 
 
 def process_predictors_two_way(

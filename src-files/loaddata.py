@@ -1,5 +1,6 @@
 import os
 import os.path
+
 import pandas as pd
 
 
@@ -29,8 +30,8 @@ def pre_processing(data_frames: pd.DataFrame) -> pd.DataFrame:
     return data_frames
 
 
-def load_file():
-    file_path = "../data/dataset.csv"
+def load_file(in_file_name):
+    file_path = in_file_name
     while not os.path.exists(file_path):
         file_path = input("\nEnter complete file path for the input:\n")
     # Make a folder to store the plots

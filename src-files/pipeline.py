@@ -2,55 +2,37 @@
 """
 # import statistics
 
+import hyperparams
 import pandas as pd
-import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-import xgboost
-import hyperparams
-
 from sklearn.ensemble import (
     AdaBoostClassifier,
     GradientBoostingClassifier,
     RandomForestClassifier,
-    RandomForestRegressor,
 )
+from sklearn.experimental import enable_halving_search_cv  # noqa
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from sklearn.metrics import f1_score as f1_score_rep
 
 # from sklearn.metrics import auc, confusion_matrix, roc_curve
-from sklearn.model_selection import TimeSeriesSplit
+from sklearn.model_selection import (
+    GridSearchCV,
+    HalvingGridSearchCV,
+    KFold,
+    RandomizedSearchCV,
+    RepeatedKFold,
+    TimeSeriesSplit,
+)
 from sklearn.naive_bayes import GaussianNB
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neural_network import MLPClassifier
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.svm import LinearSVC
-from sklearn.svm import SVC
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import classification_report
-from sklearn.model_selection import GridSearchCV,RandomizedSearchCV
-from sklearn.experimental import enable_halving_search_cv  # noqa
-from sklearn.model_selection import HalvingGridSearchCV
-
-
-from sklearn.datasets import make_regression
-from sklearn.linear_model import LinearRegression
-from sklearn.linear_model import LogisticRegression
-from sklearn.tree import DecisionTreeRegressor
+from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
-from sklearn.neighbors import KNeighborsRegressor
-from sklearn.inspection import permutation_importance
 from xgboost import XGBClassifier
-from xgboost import XGBRegressor
-from sklearn.neighbors import KNeighborsClassifier
-
-
-from sklearn.metrics import f1_score as f1_score_rep
-from sklearn.metrics import accuracy_score, recall_score, make_scorer, average_precision_score, precision_score, roc_auc_score
-from sklearn.model_selection import train_test_split
-
-from sklearn.model_selection import KFold
-from sklearn.model_selection import RepeatedKFold
 
 KF = KFold(n_splits=2, shuffle=True, random_state=True)
 RKF = RepeatedKFold(n_splits=2, n_repeats=2, random_state=2652124)
@@ -68,23 +50,14 @@ PIPELINES = [
             ("scaler", StandardScaler()),
             (
                 "LogisticRegression",
-                LogisticRegression(
-                    multi_class="multinomial",
-                    max_iter = 1500,
-                    n_jobs=-1
-                ),
+                LogisticRegression(multi_class="multinomial", max_iter=1500, n_jobs=-1),
             ),
         ],
     ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            (
-                "LinearSVC", LinearSVC(
-                    max_iter=100000,
-                    dual='auto'
-                    )
-             ),
+            ("LinearSVC", LinearSVC(max_iter=100000, dual="auto")),
         ],
     ),
     Pipeline(
@@ -102,13 +75,12 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("GradientBoostingClassifier", GradientBoostingClassifier(
-                n_estimators=100,
-                learning_rate=1.0, 
-                max_depth=1, 
-                random_state=0
-                )
-             ),
+            (
+                "GradientBoostingClassifier",
+                GradientBoostingClassifier(
+                    n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0
+                ),
+            ),
         ],
     ),
     Pipeline(
@@ -126,13 +98,13 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("KNeighborsClassifier", KNeighborsClassifier(n_neighbors=3,n_jobs=-1)),
+            ("KNeighborsClassifier", KNeighborsClassifier(n_neighbors=3, n_jobs=-1)),
         ],
     ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("SVC", SVC(kernel='rbf', C = 1)),
+            ("SVC", SVC(kernel="rbf", C=1)),
         ],
     ),
     Pipeline(
@@ -142,6 +114,7 @@ PIPELINES = [
         ],
     ),
 ]
+
 
 def try_models(
     X_: pd.DataFrame,
@@ -160,9 +133,9 @@ def try_models(
 
         for pipeline in PIPELINES:
             name = pipeline.steps[-1][0]
-            
-            #print('Parameters currently in use for :', name)
-            #print(pipeline[name].get_params())
+
+            # print('Parameters currently in use for :', name)
+            # print(pipeline[name].get_params())
 
             results[name] = dict()
             results[name]["scores"] = list()
@@ -173,15 +146,15 @@ def try_models(
             results[name]["probs"] = list()
             results[name]["confusion"] = list()
 
-            #X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1, stratify=y)
+            # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1, stratify=y)
             if split_type == "tss":
-                #print("Time series splitting")
+                # print("Time series splitting")
                 enumeration_data = TSS.split(X)
             elif split_type == "kfold":
-                #print("K-Fold splitting")
+                # print("K-Fold splitting")
                 enumeration_data = KF.split(X)
             else:
-                #print("Repeated K-Fold splitting")
+                # print("Repeated K-Fold splitting")
                 enumeration_data = RKF.split(X)
 
             for _, split in enumerate(enumeration_data):
@@ -193,8 +166,12 @@ def try_models(
                 results[name]["prediction"] += [y_pred]
 
                 results[name]["accuracy_scores"] += [accuracy_score(y_test, y_pred)]
-                results[name]["f1_score_micro"] += [f1_score_rep(y_test, y_pred, average="micro")]
-                results[name]["f1_score_macro"] += [f1_score_rep(y_test, y_pred, average="macro")]
+                results[name]["f1_score_micro"] += [
+                    f1_score_rep(y_test, y_pred, average="micro")
+                ]
+                results[name]["f1_score_macro"] += [
+                    f1_score_rep(y_test, y_pred, average="macro")
+                ]
                 results[name]["scores"] += [pipeline.score(X_test, y_test)]
 
                 if hyper_tuning_en == "half-gradient":
@@ -202,39 +179,89 @@ def try_models(
                     print(classification_report(y_pred, y_test))
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
                     if len(grid_map):
-                        halfgridsearch = HalvingGridSearchCV(pipeline[name], param_grid=grid_map, resource='n_samples', cv=3,  max_resources=15,random_state=0, n_jobs = -1, scoring='accuracy')
-                        #print("\nHalfGridSearchCV:\n",halfgridsearch.get_params());
+                        halfgridsearch = HalvingGridSearchCV(
+                            pipeline[name],
+                            param_grid=grid_map,
+                            resource="n_samples",
+                            cv=3,
+                            max_resources=15,
+                            random_state=0,
+                            n_jobs=-1,
+                            scoring="accuracy",
+                        )
+                        # print("\nHalfGridSearchCV:\n",halfgridsearch.get_params());
                         halfgridsearch.fit(X_train, y_train)
-                        print("\n The best estimator across ALL searched params:\n", halfgridsearch.best_estimator_)
-                        print("\n The best score across ALL searched params:\n", halfgridsearch.best_score_)
-                        print("\n The best parameters across ALL searched params:\n", halfgridsearch.best_params_)
-                        #print("\n", halfgridsearch.cv_results_)
+                        print(
+                            "\n The best estimator across ALL searched params:\n",
+                            halfgridsearch.best_estimator_,
+                        )
+                        print(
+                            "\n The best score across ALL searched params:\n",
+                            halfgridsearch.best_score_,
+                        )
+                        print(
+                            "\n The best parameters across ALL searched params:\n",
+                            halfgridsearch.best_params_,
+                        )
+                        # print("\n", halfgridsearch.cv_results_)
                     else:
                         print("list is empty for : ", name)
 
                 elif hyper_tuning_en == "gradient":
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
                     if len(grid_map):
-                        grid_search = GridSearchCV(pipeline[name], param_grid=grid_map, cv = 3,  n_jobs = -1, scoring='accuracy')
-                        #print("\nGridSearchCV:\n",grid_search.get_params());
+                        grid_search = GridSearchCV(
+                            pipeline[name],
+                            param_grid=grid_map,
+                            cv=3,
+                            n_jobs=-1,
+                            scoring="accuracy",
+                        )
+                        # print("\nGridSearchCV:\n",grid_search.get_params());
                         grid_search.fit(X_train, y_train)
-                        print("\n The best estimator across ALL searched params:\n", grid_search.best_estimator_)
-                        print("\n The best score across ALL searched params:\n", grid_search.best_score_)
-                        print("\n The best parameters across ALL searched params:\n", grid_search.best_params_)
-                        #print("\n",grid_search.cv_results_)
+                        print(
+                            "\n The best estimator across ALL searched params:\n",
+                            grid_search.best_estimator_,
+                        )
+                        print(
+                            "\n The best score across ALL searched params:\n",
+                            grid_search.best_score_,
+                        )
+                        print(
+                            "\n The best parameters across ALL searched params:\n",
+                            grid_search.best_params_,
+                        )
+                        # print("\n",grid_search.cv_results_)
                     else:
                         print("list is empty for : ", name)
-                    
+
                 elif hyper_tuning_en == "random":
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
                     if len(grid_map):
-                        random_search = RandomizedSearchCV(pipeline[name],param_distributions=grid_map,n_iter = 10, cv = 2,  random_state=12, n_jobs = -1, scoring='accuracy')
-                        #print("\nRandomizedSearchCV:\n", random_search.get_params());
+                        random_search = RandomizedSearchCV(
+                            pipeline[name],
+                            param_distributions=grid_map,
+                            n_iter=10,
+                            cv=2,
+                            random_state=12,
+                            n_jobs=-1,
+                            scoring="accuracy",
+                        )
+                        # print("\nRandomizedSearchCV:\n", random_search.get_params());
                         random_search.fit(X_train, y_train)
-                        print("\n The best estimator across ALL searched params:\n", random_search.best_estimator_)
-                        print("\n The best score across ALL searched params:\n", random_search.best_score_)
-                        print("\n The best parameters across ALL searched params:\n", random_search.best_params_)
-                        #print("\n",random_search.cv_results_)
+                        print(
+                            "\n The best estimator across ALL searched params:\n",
+                            random_search.best_estimator_,
+                        )
+                        print(
+                            "\n The best score across ALL searched params:\n",
+                            random_search.best_score_,
+                        )
+                        print(
+                            "\n The best parameters across ALL searched params:\n",
+                            random_search.best_params_,
+                        )
+                        # print("\n",random_search.cv_results_)
                     else:
                         print("list is empty for : ", name)
 
@@ -248,18 +275,18 @@ def try_models(
                     results[name]["model_probs"] = None
                 results[name]["confusion"] += [
                     confusion_matrix(y_test, y_pred),
-                    ]
+                ]
             print("############ Results Start ###############")
             print(name)
             print("scores:", results[name]["scores"])
             print("Accuracy: ", results[name]["accuracy_scores"])
-            print("Micro F1 Score: ",results[name]["f1_score_micro"])
+            print("Micro F1 Score: ", results[name]["f1_score_micro"])
             print("Macro F1 Score: ", results[name]["f1_score_macro"])
             print("########### Results End ################")
-            #final_results = pd.DataFrame(results[name])
-            #filename =  op_type + name + ".csv"
-            #final_results.to_csv( filename, index=False)
-                
+            # final_results = pd.DataFrame(results[name])
+            # filename =  op_type + name + ".csv"
+            # final_results.to_csv( filename, index=False)
+
         for model, model_dict in results.items():
             for run, score in enumerate(model_dict["scores"]):
                 row = {
