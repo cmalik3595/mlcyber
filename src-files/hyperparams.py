@@ -149,17 +149,16 @@ svc_gradient_grid = {
     "C": [0.1, 1, 10, 100, 1000],
     "max_iter": [50, 100, 150, 200, 1500],
     "gamma": [1, 0.1, 0.01, 0.001, 0.0001],
-    "kernel": ["linear", "poly", "rbf", "sigmoid", "precomputed"],
+    "kernel": ["linear", "poly", "rbf", "sigmoid"],
 }
 svc_random_grid = {
     "C": c_values_random,
     "max_iter": [50, 100, 150, 200, 1500],
     "gamma": gamma_random,
-    "kernel": ["linear", "poly", "rbf", "sigmoid", "precomputed"],
+    "kernel": ["linear", "poly", "rbf", "sigmoid"],
 }
 # Params: GaussianNB
 gaussian_grid = {
-    "priors": None,
     "var_smoothing": np.logspace(0, -9, num=100),
 }
 
