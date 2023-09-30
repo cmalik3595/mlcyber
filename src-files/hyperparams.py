@@ -30,7 +30,7 @@ import numpy as np
     "warm_start": False,
 }
 """
-n_estimators = [int(x) for x in np.linspace(start=25, stop=200, num=5)]
+n_estimators = [int(x) for x in np.linspace(start=25, stop=500, num=10)]
 max_features = ["sqrt", "log2", None]
 max_depth = [int(x) for x in np.linspace(3, 10, num=5)]
 max_depth.append(None)
@@ -48,13 +48,36 @@ rf_random_grid = {
     "min_samples_leaf": min_samples_leaf,
     "max_leaf_nodes": max_leaf_nodes,
     "bootstrap": bootstrap,
+    "class_weight": ["balanced", "balanced_subsample", None],
+    "criterion": ["gini", "entropy", "log_loss"],
+    "max_samples": [1, 2, 5, None],
+    "min_impurity_decrease": [0.0, 0.1],
+    "min_weight_fraction_leaf": [0.0, 0.1],
+    "n_jobs": [-1, None],
+    "oob_score": [False, True],
+    "random_state": [None],
+    "verbose": [0],
+    "warm_start": [False, True],
 }
 
 rf_gradient_grid = {
-    "n_estimators": [50, 100, 150, 200],
+    "n_estimators": [50, 100, 150, 200, 300, 500],
     "max_features": ["sqrt", "log2", None],
     "max_depth": [3, 6, 9, None],
+    "min_samples_split": min_samples_split,
+    "min_samples_leaf": min_samples_leaf,
     "max_leaf_nodes": [3, 6, 9, None],
+    "bootstrap": bootstrap,
+    "class_weight": ["balanced", "balanced_subsample", None],
+    "criterion": ["gini", "entropy", "log_loss"],
+    "max_samples": [1, 2, 5, None],
+    "min_impurity_decrease": [0.0, 0.1],
+    "min_weight_fraction_leaf": [0.0, 0.1],
+    "n_jobs": [-1, None],
+    "oob_score": [False, True],
+    "random_state": [None],
+    "verbose": [0],
+    "warm_start": [False, True],
 }
 
 # Params: LogisticRegression
@@ -79,20 +102,41 @@ rf_gradient_grid = {
 """
 
 solvers = ["newton-cg", "lbfgs", "liblinear"]
-penalty = ["l2"]
+penalty = ["l1", "l2", "elasticnet", None]
 c_values = [100, 10, 1.0, 0.1, 0.01]
-c_values_random = [int(x) for x in np.linspace(start=1, stop=200, num=10)]
 
 lr_gradient_grid = {
-    "penalty": penalty,
+    "penalty": ["l1", "l2", "elasticnet", None],
     "solver": solvers,
     "C": c_values,
+    "class_weight": [None],
+    "dual": [False, True],
+    "fit_intercept": [False, True],
+    "intercept_scaling": [1],
+    "l1_ratio": [0.0, 0.5, 1.0, None],
+    "n_jobs": [-1, None],
+    "random_state": [None],
+    "tol": [0.0001, 0.0005, 0.001],
+    "verbose": [0],
+    "warm_start": [False, True],
+    "multi_class": ["auto", "ovr", "multinomial"],
     "max_iter": [50, 100, 150, 200, 1500],
 }
 lr_random_grid = {
-    "penalty": penalty,
+    "penalty": ["l1", "l2", "elasticnet", None],
     "solver": solvers,
-    "C": c_values_random,
+    "C": c_values,
+    "class_weight": [None],
+    "dual": [False, True],
+    "fit_intercept": [False, True],
+    "intercept_scaling": [1],
+    "l1_ratio": [0.0, 0.5, 1.0, None],
+    "n_jobs": [-1, None],
+    "random_state": [None],
+    "tol": [0.0001, 0.0005, 0.001],
+    "verbose": [0],
+    "warm_start": [False, True],
+    "multi_class": ["auto", "ovr", "multinomial"],
     "max_iter": [50, 100, 150, 200, 1500],
 }
 
@@ -105,7 +149,7 @@ lr_random_grid = {
     "fit_intercept": True,
     "intercept_scaling": 1,
     "loss": "squared_hinge",
-    "max_iter": 100000,
+    "max_iter": [50, 100, 150, 200, 1500],
     "multi_class": "ovr",
     "penalty": "l2",
     "random_state": None,
@@ -113,15 +157,34 @@ lr_random_grid = {
     "verbose": 0,
 }
 """
-gamma_random = [int(x) for x in np.linspace(start=1, stop=1000, num=10)]
 
 lsvc_gradient_grid = {
-    "C": [0.1, 1, 10, 100, 1000],
-    "max_iter": [50, 100, 150, 200, 1500],
+    "C": c_values,
+    "max_iter": [50, 100, 150, 200, 1500, 100000],
+    "class_weight": [None],
+    "dual": [False, True],
+    "fit_intercept": [False, True],
+    "intercept_scaling": [1],
+    "loss": ["squared_hinge", "hinge"],
+    "multi_class": ["ovr", "crammer_singer"],
+    "penalty": ["l1", "l2"],
+    "random_state": [None],
+    "tol": [0.0001, 0.0005, 0.001],
+    "verbose": [0],
 }
 lsvc_random_grid = {
-    "C": c_values_random,
-    "max_iter": [50, 100, 150, 200, 1500],
+    "C": c_values,
+    "max_iter": [50, 100, 150, 200, 1500, 100000],
+    "class_weight": [None],
+    "dual": [False, True],
+    "fit_intercept": [False, True],
+    "intercept_scaling": [1],
+    "loss": ["squared_hinge", "hinge"],
+    "multi_class": ["ovr", "crammer_singer"],
+    "penalty": ["l1", "l2"],
+    "random_state": [None],
+    "tol": [0.0001, 0.0005, 0.001],
+    "verbose": [0],
 }
 
 # Params: SVC
@@ -138,7 +201,7 @@ lsvc_random_grid = {
     "kernel": "rbf",
     "max_iter": -1,
     "probability": False,
-    "dom_state": None,
+    "random_state": None,
     "shrinking": True,
     "tol": 0.001,
     "verbose": False,
@@ -146,16 +209,38 @@ lsvc_random_grid = {
 """
 
 svc_gradient_grid = {
-    "C": [0.1, 1, 10, 100, 1000],
-    "max_iter": [50, 100, 150, 200, 1500],
-    "gamma": [1, 0.1, 0.01, 0.001, 0.0001],
+    "C": c_values,
     "kernel": ["linear", "poly", "rbf", "sigmoid"],
+    "break_ties": [False, True],
+    "cache_size": [200, 500],
+    "class_weight": [None],
+    "coef0": [0.0, 0.1],
+    "decision_function_shape": ["ovr", "ovo"],
+    "degree": [3],
+    "gamma": ["scale", "auto"],
+    "max_iter": [50, 100, 150, 200, 1500, 100000, -1],
+    "probability": [False, True],
+    "random_state": [None],
+    "shrinking": [True, False],
+    "tol": [0.0001, 0.0005, 0.001],
+    "verbose": [0],
 }
 svc_random_grid = {
-    "C": c_values_random,
-    "max_iter": [50, 100, 150, 200, 1500],
-    "gamma": gamma_random,
+    "C": c_values,
     "kernel": ["linear", "poly", "rbf", "sigmoid"],
+    "break_ties": [False, True],
+    "cache_size": [200, 500],
+    "class_weight": [None],
+    "coef0": [0.0, 0.1],
+    "decision_function_shape": ["ovr", "ovo"],
+    "degree": [3],
+    "gamma": ["scale", "auto"],
+    "max_iter": [50, 100, 150, 200, 1500, 100000, -1],
+    "probability": [False, True],
+    "random_state": [None],
+    "shrinking": [True, False],
+    "tol": [0.0001, 0.0005, 0.001],
+    "verbose": [0],
 }
 # Params: GaussianNB
 gaussian_grid = {
@@ -219,12 +304,15 @@ xgb_gradient_grid = {
     "eta": [0.2, 0.3, 0.5],
     "colsample_bytree": [0.5, 1, 0.75],
     "booster": ["gbtree", "gblinear", "dart"],
+    "verbosity": [0, None],
+    "objective": ["binary:logistic", "reg:logistic", "binary:logitraw", "binary:hinge"],
+    "n_jobs": [-1, None],
 }
 
 xgb_random_grid = {
     "n_estimators": n_estimators,
     "max_depth": max_depth,
-    "gamma": gamma_random,
+    "gamma": [0, 0.5, 0.75],
     "reg_alpha": [0, 0.5, 1],
     "reg_lambda": [0.5, 1, 0.75],
     "colsample_bytree": [0.5, 1, 0.75],
@@ -232,6 +320,8 @@ xgb_random_grid = {
     "learning_rate": [1, 0.5, 0.25, 0.1, 0.05, 0.01],
     "booster": ["gbtree", "gblinear", "dart"],
     "base_score": [0.2, 0.5, 0.75],
+    "objective": ["binary:logistic", "reg:logistic", "binary:logitraw", "binary:hinge"],
+    "n_jobs": [-1, None],
 }
 # Params: GradientBoostingClassifier
 """
@@ -265,8 +355,18 @@ gbc_gradient_grid = {
     "max_features": ["sqrt", "log2", None],
     "max_depth": [3, 6, 9, None],
     "max_leaf_nodes": [3, 6, 9, None],
-    "subsample": [0.8],
+    "subsample": [0.8, 1.0],
     "learning_rate": learning_rates,
+    "ccp_alpha": [0.0, 0.01, 0.5],
+    "criterion": ["friedman_mse", "squared_error"],
+    "min_impurity_decrease": [0.0, 0.1],
+    "min_samples_leaf": min_samples_leaf,
+    "min_samples_split": min_samples_split,
+    "min_weight_fraction_leaf": [0.0, 0.1],
+    "tol": [0.0001, 0.0005, 0.001],
+    "validation_fraction": [0.1],
+    "verbose": [0],
+    "warm_start": [False, True],
 }
 gbc_random_grid = {
     "n_estimators": n_estimators,
@@ -276,7 +376,15 @@ gbc_random_grid = {
     "min_samples_split": min_samples_split,
     "min_samples_leaf": min_samples_leaf,
     "max_leaf_nodes": max_leaf_nodes,
-    "subsample": [0.8],
+    "subsample": [0.8, 1.0],
+    "ccp_alpha": [0.0, 0.01, 0.5],
+    "criterion": ["friedman_mse", "squared_error"],
+    "min_impurity_decrease": [0.0, 0.1],
+    "min_weight_fraction_leaf": [0.0, 0.1],
+    "tol": [0.0001, 0.0005, 0.001],
+    "validation_fraction": [0.1],
+    "verbose": [0],
+    "warm_start": [False, True],
 }
 # Params: AdaBoostClassifier
 """
@@ -291,8 +399,8 @@ gbc_random_grid = {
 """
 ada_gradient_grid = {
     "algorithm": ["SAMME", "SAMME.R"],
+    "n_estimators": [50, 100, 150, 200],
     "learning_rate": learning_rates,
-    "n_estimators": n_estimators,
 }
 
 # Params: DecisionTreeClassifier
@@ -307,7 +415,7 @@ ada_gradient_grid = {
     "min_impurity_decrease": 0.0,
     "min_samples_leaf": 1,
     "min_samples_split": 2,
-    "mweight_fraction_leaf": 0.0,
+    "min_weight_fraction_leaf": 0.0,
     "random_state": 0,
     "splitter": "best",
 }
@@ -318,13 +426,23 @@ dt_gradient_grid = {
     "max_leaf_nodes": [3, 6, 9, None],
     "min_samples_split": min_samples_split,
     "min_samples_leaf": min_samples_leaf,
+    "ccp_alpha": [0.0, 0.01, 0.5],
+    "class_weight": [None],
+    "min_impurity_decrease": [0.0, 0.1],
+    "min_weight_fraction_leaf": [0.0, 0.1],
+    "splitter": ["best", "random"],
 }
 dt_random_grid = {
     "max_features": max_features,
+    "ccp_alpha": [0.0, 0.01, 0.5],
     "max_depth": max_depth,
     "max_leaf_nodes": max_leaf_nodes,
     "min_samples_split": min_samples_split,
     "min_samples_leaf": min_samples_leaf,
+    "class_weight": [None],
+    "min_impurity_decrease": [0.0, 0.1],
+    "min_weight_fraction_leaf": [0.0, 0.1],
+    "splitter": ["best", "random"],
 }
 
 # Params: KNeighborsClassifier
@@ -348,13 +466,17 @@ knn_gradient_params = {
     "algorithm": ["auto", "ball_tree", "kd_tree", "brute"],
     "metric": ["minkowski", "euclidean", "manhattan"],
     "leaf_size": [30, 40, 50],
+    "n_jobs": [-1, None],
+    "p": [2, 1],
 }
 knn_random_params = {
-    "n_neighbors": n_neighbors,
-    "leaf_size": leaf_size,
+    "n_neighbors": [5, 7, 9, 11, 13, 15],
+    "leaf_size": [30, 40, 50],
     "weights": ["uniform", "distance"],
     "algorithm": ["auto", "ball_tree", "kd_tree", "brute"],
     "metric": ["minkowski", "euclidean", "manhattan"],
+    "n_jobs": [-1, None],
+    "p": [2, 1],
 }
 
 # Params: MLPClassifier
@@ -386,12 +508,28 @@ knn_random_params = {
 }
 """
 mlp_gradient_params = {
-    "hidden_layer_sizes": [(150, 100, 50), (120, 80, 40), (100, 50, 30)],
-    "max_iter": [50, 100, 150, 200, 1500],
     "activation": ["identity", "logistic", "tanh", "relu"],
-    "solver": ["sgd", "adam", "lbfgs"],
     "alpha": [0.0001, 0.001, 0.01, 0.05],
+    "batch_size": ["auto"],
+    "beta_1": [0.9],
+    "beta_2": [0.999],
+    "early_stopping": [False, True],
+    "epsilon": [1e-08],
+    "hidden_layer_sizes": [(150, 100, 50), (120, 80, 40), (100, 50, 30)],
+    "max_iter": [50, 100, 150, 200, 1500, 2000],
+    "solver": ["sgd", "adam", "lbfgs"],
     "learning_rate": ["constant", "adaptive", "invscaling"],
+    "learning_rate_init": [0.001],
+    "max_fun": [15000, 20000],
+    "momentum": [0.9, 0.99],
+    "n_iter_no_change": [10, 20],
+    "nesterovs_momentum": [True, False],
+    "power_t": [0.5, 0.6],
+    "shuffle": [True, False],
+    "tol": [0.0001, 0.0005, 0.001],
+    "validation_fraction": [0.1],
+    "verbose": [0],
+    "warm_start": [False, True],
 }
 
 # Params End #
