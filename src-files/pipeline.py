@@ -1,8 +1,11 @@
 """
 """
 # import statistics
+import math
+from multiprocessing import cpu_count
 
 import hyperparams
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -23,6 +26,7 @@ from sklearn.model_selection import (
     KFold,
     RandomizedSearchCV,
     RepeatedKFold,
+    StratifiedKFold,
     TimeSeriesSplit,
 )
 from sklearn.naive_bayes import GaussianNB
@@ -34,15 +38,28 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 
+rng = np.random.RandomState(0)
 KF = KFold(n_splits=2, shuffle=True, random_state=True)
 RKF = RepeatedKFold(n_splits=2, n_repeats=2, random_state=2652124)
 TSS = TimeSeriesSplit(n_splits=2, max_train_size=None)
+n_jobs_cpu = math.floor((cpu_count() / 3))
+# n_jobs_cpu=-1
+# n_pre_dispatch=math.floor((cpu_count()/3)) + n_jobs_cpu
+
+scoring_list = [
+    "accuracy",
+    "balanced_accuracy",
+    "f1_macro",
+    "f1_micro",
+]
+"""
+"""
 
 PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("RandomForestClassifier", RandomForestClassifier(n_jobs=-1)),
+            ("RandomForestClassifier", RandomForestClassifier()),
         ],
     ),
     Pipeline(
@@ -50,14 +67,14 @@ PIPELINES = [
             ("scaler", StandardScaler()),
             (
                 "LogisticRegression",
-                LogisticRegression(multi_class="multinomial", max_iter=1500, n_jobs=-1),
+                LogisticRegression(),
             ),
         ],
     ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("LinearSVC", LinearSVC(max_iter=100000, dual="auto")),
+            ("LinearSVC", LinearSVC()),
         ],
     ),
     Pipeline(
@@ -69,7 +86,7 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("XGBClassifier", XGBClassifier(n_jobs=-1)),
+            ("XGBClassifier", XGBClassifier()),
         ],
     ),
     Pipeline(
@@ -77,9 +94,7 @@ PIPELINES = [
             ("scaler", StandardScaler()),
             (
                 "GradientBoostingClassifier",
-                GradientBoostingClassifier(
-                    n_estimators=100, learning_rate=1.0, max_depth=1, random_state=0
-                ),
+                GradientBoostingClassifier(),
             ),
         ],
     ),
@@ -92,25 +107,25 @@ PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("DecisionTreeClassifier", DecisionTreeClassifier(random_state=0)),
+            ("DecisionTreeClassifier", DecisionTreeClassifier()),
         ],
     ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("KNeighborsClassifier", KNeighborsClassifier(n_neighbors=3, n_jobs=-1)),
+            ("KNeighborsClassifier", KNeighborsClassifier()),
         ],
     ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("SVC", SVC(kernel="rbf", C=1)),
+            ("SVC", SVC()),
         ],
     ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
-            ("MLPClassifier", MLPClassifier(random_state=1, max_iter=100)),
+            ("MLPClassifier", MLPClassifier()),
         ],
     ),
 ]
@@ -134,8 +149,7 @@ def try_models(
         for pipeline in PIPELINES:
             name = pipeline.steps[-1][0]
 
-            # print('Parameters currently in use for :', name)
-            # print(pipeline[name].get_params())
+            print(name, " is using:\n", pipeline[name].get_params())
 
             results[name] = dict()
             results[name]["scores"] = list()
@@ -174,33 +188,41 @@ def try_models(
                 ]
                 results[name]["scores"] += [pipeline.score(X_test, y_test)]
 
+                print(name, "classification: ", classification_report(y_pred, y_test))
+
                 if hyper_tuning_en == "half-gradient":
-                    print(name)
-                    print(classification_report(y_pred, y_test))
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
                     if len(grid_map):
                         halfgridsearch = HalvingGridSearchCV(
                             pipeline[name],
                             param_grid=grid_map,
                             resource="n_samples",
-                            cv=3,
+                            cv=4,
                             max_resources=15,
                             random_state=0,
-                            n_jobs=-1,
-                            scoring="accuracy",
+                            n_jobs=n_jobs_cpu,
+                            # scoring=scoring_list,
+                            scoring="f1_macro",
+                            # error_score='raise',
                         )
                         # print("\nHalfGridSearchCV:\n",halfgridsearch.get_params());
                         halfgridsearch.fit(X_train, y_train)
                         print(
-                            "\n The best estimator across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best estimator across ALL searched params:",
                             halfgridsearch.best_estimator_,
                         )
                         print(
-                            "\n The best score across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best score across ALL searched params:",
                             halfgridsearch.best_score_,
                         )
                         print(
-                            "\n The best parameters across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best parameters across ALL searched params:",
                             halfgridsearch.best_params_,
                         )
                         # print("\n", halfgridsearch.cv_results_)
@@ -213,22 +235,30 @@ def try_models(
                         grid_search = GridSearchCV(
                             pipeline[name],
                             param_grid=grid_map,
-                            cv=3,
-                            n_jobs=-1,
-                            scoring="accuracy",
+                            cv=5,
+                            n_jobs=n_jobs_cpu,
+                            # scoring=scoring_list,
+                            scoring="f1_macro",
+                            # error_score='raise',
                         )
                         # print("\nGridSearchCV:\n",grid_search.get_params());
                         grid_search.fit(X_train, y_train)
                         print(
-                            "\n The best estimator across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best estimator across ALL searched params:",
                             grid_search.best_estimator_,
                         )
                         print(
-                            "\n The best score across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best score across ALL searched params:",
                             grid_search.best_score_,
                         )
                         print(
-                            "\n The best parameters across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best parameters across ALL searched params:",
                             grid_search.best_params_,
                         )
                         # print("\n",grid_search.cv_results_)
@@ -238,30 +268,43 @@ def try_models(
                 elif hyper_tuning_en == "random":
                     grid_map = hyperparams.get_params_grid(name, hyper_tuning_en)
                     if len(grid_map):
+                        skf = StratifiedKFold(
+                            n_splits=6, shuffle=True, random_state=rng
+                        )
                         random_search = RandomizedSearchCV(
                             pipeline[name],
                             param_distributions=grid_map,
-                            n_iter=10,
-                            cv=2,
-                            random_state=12,
-                            n_jobs=-1,
-                            scoring="accuracy",
+                            n_iter=30,
+                            cv=skf,
+                            # pre_dispatch=n_pre_dispatch,
+                            n_jobs=n_jobs_cpu,
+                            random_state=rng,
+                            # scoring=scoring_list,
+                            scoring="f1_macro",
+                            verbose=5,
+                            # error_score='raise',
                         )
                         # print("\nRandomizedSearchCV:\n", random_search.get_params());
                         random_search.fit(X_train, y_train)
                         print(
-                            "\n The best estimator across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best estimator across ALL searched params:",
                             random_search.best_estimator_,
                         )
                         print(
-                            "\n The best score across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best score across ALL searched params:",
                             random_search.best_score_,
                         )
                         print(
-                            "\n The best parameters across ALL searched params:\n",
+                            name,
+                            ": ",
+                            "The best parameters across ALL searched params:",
                             random_search.best_params_,
                         )
-                        # print("\n",random_search.cv_results_)
+                        # print("\n",random_search.cv_results_['params'])
                     else:
                         print("list is empty for : ", name)
 
