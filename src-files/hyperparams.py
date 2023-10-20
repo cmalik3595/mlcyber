@@ -4,13 +4,15 @@ import math
 from multiprocessing import cpu_count
 
 import numpy as np
+from tensorflow.keras.optimizers import Adam
 
 # import packages for hyperparameters tuning
 # from hyperopt import STATUS_OK, Trials, fmin, hp, tpe
 
 # Params Start #
 n_jobs_cpu = math.floor((cpu_count() / 3))
-# n_jobs_cpu = -1
+if n_jobs_cpu < 1:
+    n_jobs_cpu = None
 
 # Params: RandomForestClassifier
 """
@@ -421,14 +423,14 @@ dt_grid = {
     "weights": "uniform",
 }
 """
-n_neighbors = [int(x) for x in np.linspace(start=3, stop=20, num=8)]
-leaf_size = [int(x) for x in np.linspace(start=30, stop=50, num=3)]
+n_neighbors = [int(x) for x in np.linspace(start=3, stop=20, num=10)]
+leaf_size = [int(x) for x in np.linspace(start=30, stop=80, num=10)]
 knn_grid = {
-    "n_neighbors": [3, 5, 7, 9, 11, 13, 15],
+    "n_neighbors": n_neighbors,
     "weights": ["uniform", "distance"],
     "algorithm": ["auto", "ball_tree", "kd_tree", "brute"],
     "metric": ["minkowski", "euclidean", "manhattan"],
-    "leaf_size": [30, 40, 50],
+    "leaf_size": leaf_size,
     "n_jobs": [n_jobs_cpu],
     "p": [2, 1],
 }
@@ -471,7 +473,7 @@ mlp_grid = {
     "epsilon": [1e-08],
     "hidden_layer_sizes": [(100), (150, 100, 50), (120, 80, 40), (100, 50, 30)],
     "max_iter": max_iter,
-    "solver": ["adam", "sgd" "lbfgs"],
+    "solver": ["adam", "sgd", "lbfgs"],
     "learning_rate": ["constant", "adaptive", "invscaling"],
     "learning_rate_init": [0.001],
     "max_fun": [15000, 20000],
@@ -485,6 +487,131 @@ mlp_grid = {
     "verbose": [0],
 }
 
+# Params: KerasClassifier
+"""
+"""
+# learning algorithm parameters
+lr = [1e-2, 1e-3, 1e-4]
+decay = [1e-6, 1e-9, 0]
+
+# activation
+activation = ["relu", "sigmoid"]
+
+# numbers of layers
+nl1 = [0, 1, 2, 3]
+nl2 = [0, 1, 2, 3]
+nl3 = [0, 1, 2, 3]
+
+# neurons in each layer
+nn1 = [
+    300,
+    700,
+    1400,
+    2100,
+]
+nn2 = [100, 400, 800]
+nn3 = [50, 150, 300]
+
+# dropout and regularisation
+dropout = [0, 0.1, 0.2, 0.3]
+l1 = [0, 0.01, 0.003, 0.001, 0.0001]
+l2 = [0, 0.01, 0.003, 0.001, 0.0001]
+
+keras_nn_grid = {
+    "nl1": nl1,
+    "nl2": nl2,
+    "nl3": nl3,
+    "nn1": nn1,
+    "nn2": nn2,
+    "nn3": nn3,
+    "act": activation,
+    "l1": l1,
+    "l2": l2,
+    "lr": lr,
+    "decay": decay,
+    "dropout": dropout,
+}
+# Params: CNNClassifier
+"""
+{
+        model=None,
+        *,
+        build_fn=None,
+        warm_start=False,
+        random_state=None
+        optimizer='rmsprop',
+        loss=None, metrics=None,
+        batch_size=None,
+        validation_batch_size=None,
+        verbose=1,
+        callbacks=None,
+        validation_split=0.0,
+        shuffle=True,
+        run_eagerly=False,
+        epochs=1,
+        class_weight=None,
+        **kwargs
+}
+"""
+nn_optimizer = Adam(
+    learning_rate=0.001,
+    beta_1=0.9,
+    beta_2=0.999,
+    epsilon=1e-07,
+    amsgrad=False,
+    weight_decay=None,
+    clipnorm=None,
+    clipvalue=None,
+    global_clipnorm=None,
+    use_ema=False,
+    ema_momentum=0.99,
+    ema_overwrite_frequency=None,
+    jit_compile=True,
+    name="Adam",
+)
+
+epochs = ([10, 200, 100, 300, 400],)
+
+cnn_grid = {
+    "validation_split": [0.1],
+    "batch_size": [100, 20, 50, 25, 32],
+    "epochs": [5, 10],
+    "optimizer": ["rmsprop", "adam", nn_optimizer],
+    "loss": ["categorical_crossentropy"],
+    "metrics": ["accuracy", "f1_score"],
+}
+
+# Params: DNNClassifier
+"""
+{
+        model=None,
+        *,
+        build_fn=None,
+        warm_start=False,
+        random_state=None
+        optimizer='rmsprop',
+        loss=None, metrics=None,
+        batch_size=None,
+        validation_batch_size=None,
+        verbose=1,
+        callbacks=None,
+        validation_split=0.0,
+        shuffle=True,
+        run_eagerly=False,
+        epochs=1,
+        class_weight=None,
+        **kwargs
+}
+'epochs':[10, 200, 100, 300, 400],
+"""
+dnn_grid = {
+    "validation_split": [0.1],
+    "batch_size": [100, 20, 50, 25, 32],
+    "epochs": [5, 10],
+    "optimizer": ["rmsprop", "adam", nn_optimizer],
+    "loss": ["categorical_crossentropy"],
+    "metrics": ["accuracy", "f1_score"],
+}
 # Params End #
 
 gradient_grid_map = {
@@ -499,6 +626,9 @@ gradient_grid_map = {
     "KNeighborsClassifier": knn_grid,
     "SVC": svc_grid,
     "MLPClassifier": mlp_grid,
+    "KerasClassifier": keras_nn_grid,
+    "CNNClassifier": cnn_grid,
+    "DNNClassifier": dnn_grid,
 }
 random_grid_map = {
     "RandomForestClassifier": rf_random_grid,
@@ -512,6 +642,9 @@ random_grid_map = {
     "KNeighborsClassifier": knn_grid,
     "SVC": svc_grid,
     "MLPClassifier": mlp_grid,
+    "KerasClassifier": keras_nn_grid,
+    "CNNClassifier": cnn_grid,
+    "DNNClassifier": dnn_grid,
 }
 
 
