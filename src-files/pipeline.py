@@ -8,9 +8,6 @@ import hyperparams
 import keras
 import numpy as np
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-import tensorflow as tf
 from keras.callbacks import EarlyStopping
 from keras.utils import to_categorical
 from scikeras.wrappers import KerasClassifier
@@ -42,19 +39,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier
-from tensorflow.keras import Model
-from tensorflow.keras.layers import (
-    Conv1D,
-    Conv2D,
-    Dense,
-    Dropout,
-    Flatten,
-    Input,
-    MaxPooling1D,
-    MaxPooling2D,
-)
+from tensorflow.keras.layers import Conv1D, Dense, Dropout, Flatten, Input, MaxPooling1D
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import SGD, Adam
+from tensorflow.keras.optimizers import Adam
 from xgboost import XGBClassifier
 
 """
@@ -279,6 +266,8 @@ def create_dnn_model(
 
 """
 Pipelines
+"""
+PIPELINES = [
     Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -371,8 +360,6 @@ Pipelines
             ),
         ],
     ),
-"""
-PIPELINES = [
     Pipeline(
         [
             (
@@ -396,7 +383,7 @@ def try_models(
     hyper_tuning_en,
     op_type,
 ) -> None:
-    result_df = pd.DataFrame()
+    # result_df = pd.DataFrame()
     for pass_, feature_set in enumerate(feature_sets):
         X = X_
         results = dict()
@@ -456,8 +443,8 @@ def try_models(
                             KerasClassifier__callbacks=[early_stop],
                         )
                         results[name]["scores"] += [
-                                pipeline.score(X_test, to_categorical(y_test))
-                                ]
+                            pipeline.score(X_test, to_categorical(y_test))
+                        ]
                         y_pred = pipeline.predict(X_test)
                         results[name]["scores"] += [pipeline.score(X_test, y_test)]
                     elif name == "CNNClassifier":
@@ -486,8 +473,8 @@ def try_models(
                         y_hat = np.argmax(y_hat, axis=-1)
                         y_pred = y_hat
                         results[name]["scores"] += [
-                                pipeline.score(x_test, to_categorical(y_test))
-                                ]
+                            pipeline.score(x_test, to_categorical(y_test))
+                        ]
                     elif name == "DNNClassifier":
                         x_train = np.copy(X_train_scaled)
                         x_test = np.copy(X_test_scaled)
@@ -513,8 +500,8 @@ def try_models(
                         y_hat = np.argmax(y_hat, axis=-1)
                         y_pred = y_hat
                         results[name]["scores"] += [
-                                pipeline.score(x_test, to_categorical(y_test))
-                                ]
+                            pipeline.score(x_test, to_categorical(y_test))
+                        ]
                 else:
                     pipeline.fit(X_train, y_train)
                     y_pred = pipeline.predict(X_test)
@@ -631,15 +618,15 @@ def try_models(
                                 random_search.fit(X_train, y_train)
                                 if hasattr(pipeline, "predict_proba"):
                                     results[name]["probs"] += [
-                                            pipeline.predict_proba(
-                                                X_test,
-                                                )[:, 1]
-                                            ]
+                                        pipeline.predict_proba(
+                                            X_test,
+                                        )[:, 1]
+                                    ]
                                 else:
                                     results[name]["model_probs"] = None
                                     results[name]["confusion"] += [
-                                            confusion_matrix(y_test, y_pred),
-                                            ]
+                                        confusion_matrix(y_test, y_pred),
+                                    ]
                             elif name == "CNNClassifier":
                                 x_train = np.copy(X_train_scaled)
                                 x_test = np.copy(X_test_scaled)
@@ -664,15 +651,15 @@ def try_models(
                                 random_search.fit(x_train, to_categorical(y_train))
                                 if hasattr(pipeline, "predict_proba"):
                                     results[name]["probs"] += [
-                                            pipeline.predict_proba(
-                                                x_test,
-                                                )[:, 1]
-                                            ]
+                                        pipeline.predict_proba(
+                                            x_test,
+                                        )[:, 1]
+                                    ]
                                 else:
                                     results[name]["model_probs"] = None
                                     results[name]["confusion"] += [
-                                            confusion_matrix(y_test, y_pred),
-                                            ]
+                                        confusion_matrix(y_test, y_pred),
+                                    ]
                             elif name == "DNNClassifier":
                                 x_train = np.copy(X_train_scaled)
                                 x_test = np.copy(X_test_scaled)
@@ -696,15 +683,15 @@ def try_models(
                                 random_search.fit(x_train, to_categorical(y_train))
                                 if hasattr(pipeline, "predict_proba"):
                                     results[name]["probs"] += [
-                                            pipeline.predict_proba(
-                                                x_test,
-                                                )[:, 1]
-                                            ]
+                                        pipeline.predict_proba(
+                                            x_test,
+                                        )[:, 1]
+                                    ]
                                 else:
                                     results[name]["model_probs"] = None
                                     results[name]["confusion"] += [
-                                            confusion_matrix(y_test, y_pred),
-                                            ]
+                                        confusion_matrix(y_test, y_pred),
+                                    ]
                         else:
                             random_search = RandomizedSearchCV(
                                 pipeline[name],
