@@ -1,10 +1,13 @@
 """
 """
 import math
+import warnings
 from multiprocessing import cpu_count
 
 import numpy as np
 from tensorflow.keras.optimizers import Adam
+
+warnings.filterwarnings("ignore")
 
 # import packages for hyperparameters tuning
 # from hyperopt import STATUS_OK, Trials, fmin, hp, tpe
@@ -37,27 +40,27 @@ if n_jobs_cpu < 1:
     "warm_start": False,
 }
 """
-max_iter = [1000, 1500, 2000, 8000]
+max_iter = [100, 200, 1500]
 tol = [0.0001, 0.0005, 0.001]
 random_state = [None]
-criterion = ["gini", "entropy", "log_loss"]
-n_estimators = [100, 150, 200, 300, 500]
-max_features = ["sqrt", "log2", None]
+criterion = ["gini"]
+n_estimators = [100, 500, 1000, 2000]
+max_features = ["sqrt", None]
 max_depth = [None, 1, 3, 6, 9]
 max_leaf_nodes = [None, 3, 6, 9]
-min_samples_split = [2, 5, 10]
+min_samples_split = [2, 5]
 min_samples_leaf = [1, 2, 4]
 bootstrap = [True]
 max_samples = [None, 1, 2, 5]
 min_impurity_decrease = [0.0, 0.1]
 min_weight_fraction_leaf = [0.0, 0.1]
 ccp_alpha = [0.0, 0.01, 0.5]
-oob_score = [False, True]
-solvers = ["lbfgs", "newton-cg", "liblinear"]
-penalty = ["l2", "l1", "elasticnet"]
+oob_score = [False]
+solvers = ["lbfgs"]
+penalty = ["l2"]
 c_values = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1, 1.0, 10, 100]
 learning_rates = [1, 0.5, 0.25, 0.1, 0.05, 0.01]
-dual = [False, True]
+dual = [False]
 
 rf_random_grid = {
     "ccp_alpha": ccp_alpha,
@@ -121,7 +124,7 @@ rf_gradient_grid = {
 """
 
 lr_gradient_grid = {
-    "penalty": ["l2", "l1", "elasticnet", None],
+    "penalty": ["l2", None],
     "solver": solvers,
     "C": c_values,
     "class_weight": [None],
@@ -137,7 +140,7 @@ lr_gradient_grid = {
     "max_iter": max_iter,
 }
 lr_random_grid = {
-    "penalty": ["l2", "l1", "elasticnet", None],
+    "penalty": ["l2", None],
     "solver": solvers,
     "C": c_values,
     "class_weight": [None],
@@ -175,12 +178,12 @@ lsvc_gradient_grid = {
     "C": c_values,
     "max_iter": max_iter,
     "class_weight": [None],
-    "dual": dual,
+    "dual": ["auto"],
     "fit_intercept": [False, True],
     "intercept_scaling": [1],
     "loss": ["squared_hinge", "hinge"],
     "multi_class": ["ovr", "crammer_singer"],
-    "penalty": ["l2", "l1"],
+    "penalty": ["l2"],
     "random_state": random_state,
     "tol": tol,
     "verbose": [0],
@@ -189,12 +192,12 @@ lsvc_grid = {
     "C": c_values,
     "max_iter": max_iter,
     "class_weight": [None],
-    "dual": dual,
+    "dual": ["auto"],
     "fit_intercept": [True, False],
     "intercept_scaling": [1],
     "loss": ["squared_hinge", "hinge"],
     "multi_class": ["ovr", "crammer_singer"],
-    "penalty": ["l2", "l1"],
+    "penalty": ["l2"],
     "random_state": random_state,
     "tol": tol,
     "verbose": [0],
@@ -240,7 +243,7 @@ svc_grid = {
 }
 # Params: GaussianNB
 gaussian_grid = {
-    "var_smoothing": [1e-9, 1e-10, 1e-11, 1e-12],
+    "var_smoothing": [1e-9, 1e-10, 1e-11, 1e-12, 1e-8, 1e-7],
 }
 
 # Params: XGBClassifier

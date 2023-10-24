@@ -2,6 +2,7 @@
 Import Section
 """
 import math
+import warnings
 from multiprocessing import cpu_count
 
 import hyperparams
@@ -44,6 +45,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.optimizers import Adam
 from xgboost import XGBClassifier
 
+warnings.filterwarnings("ignore")
 """
 Global Variables section
 """
@@ -57,11 +59,10 @@ PYTHONHASHSEED = 0
 n_jobs_cpu = math.floor((cpu_count() / 3))
 if n_jobs_cpu < 1:
     n_jobs_cpu = None
-n_jobs_cpu = None
 
 # Number of iterations for Neural networks
-n_epochs = 2  # 30
-n_cv = 3
+n_epochs = 30  # 30
+n_cv = 4
 
 # Random state
 rng = np.random.RandomState(0)
@@ -72,7 +73,6 @@ RKF = RepeatedKFold(n_splits=2, n_repeats=2, random_state=2652124)
 TSS = TimeSeriesSplit(n_splits=2, max_train_size=None)
 
 # define callbacks
-# early_stop = EarlyStopping(monitor = 'val_accuracy', mode = 'max', patience=5, restore_best_weights=True)
 early_stop = EarlyStopping(
     monitor="val_loss", mode="max", patience=5, restore_best_weights=True
 )
@@ -257,7 +257,6 @@ def create_dnn_model(
     dnn_model.add(Dense(units=30, activation="relu"))
     dnn_model.add(Dense(units=20, activation="relu"))
     dnn_model.add(Dense(units=num_classes, activation="softmax"))
-    # dnn_model.compile(loss = "sparse_categorical_crossentropy", optimizer=self_optimizer, metrics=['accuracy'])
     dnn_model.compile(
         loss="categorical_crossentropy", optimizer=self_optimizer, metrics=["accuracy"]
     )
@@ -268,6 +267,26 @@ def create_dnn_model(
 Pipelines
 """
 PIPELINES = [
+    Pipeline(
+        [
+            (
+                "CNNClassifier",
+                KerasClassifier(
+                    model=create_cnn_model, epochs=6, batch_size=64, verbose=1
+                ),
+            ),
+        ],
+    ),
+    Pipeline(
+        [
+            (
+                "DNNClassifier",
+                KerasClassifier(
+                    model=create_dnn_model, epochs=6, batch_size=64, verbose=1
+                ),
+            ),
+        ],
+    ),
     Pipeline(
         [
             ("scaler", StandardScaler()),
@@ -343,26 +362,6 @@ PIPELINES = [
     Pipeline(
         [
             (
-                "CNNClassifier",
-                KerasClassifier(
-                    model=create_cnn_model, epochs=6, batch_size=64, verbose=1
-                ),
-            ),
-        ],
-    ),
-    Pipeline(
-        [
-            (
-                "DNNClassifier",
-                KerasClassifier(
-                    model=create_dnn_model, epochs=6, batch_size=64, verbose=1
-                ),
-            ),
-        ],
-    ),
-    Pipeline(
-        [
-            (
                 "KerasClassifier",
                 KerasClassifier(
                     model=create_keras_model, epochs=6, batch_size=64, verbose=1
@@ -403,9 +402,11 @@ def try_models(
             results[name] = dict()
             results[name]["scores"] = list()
             results[name]["accuracy_scores"] = list()
+            results[name]["rdm_best_params"] = list()
+            results[name]["rdm_best_score"] = list()
+            results[name]["rdm_best_estimator"] = list()
             results[name]["f1_score_micro"] = list()
             results[name]["f1_score_macro"] = list()
-            results[name]["prediction"] = list()
             results[name]["probs"] = list()
             results[name]["confusion"] = list()
 
@@ -507,7 +508,6 @@ def try_models(
                     y_pred = pipeline.predict(X_test)
                     results[name]["scores"] += [pipeline.score(X_test, y_test)]
 
-                results[name]["prediction"] += [y_pred]
                 results[name]["accuracy_scores"] += [accuracy_score(y_test, y_pred)]
                 results[name]["f1_score_micro"] += [
                     f1_score_rep(y_test, y_pred, average="micro")
@@ -602,9 +602,10 @@ def try_models(
                             random_search = RandomizedSearchCV(
                                 pipeline[name],
                                 param_distributions=grid_map,
-                                n_iter=2,
+                                n_iter=30,
                                 cv=n_cv,
-                                n_jobs=n_jobs_cpu,
+                                # n_jobs=n_jobs_cpu,
+                                n_jobs=1,
                                 random_state=rng,
                                 scoring="f1_macro",
                                 verbose=1,
@@ -623,7 +624,6 @@ def try_models(
                                         )[:, 1]
                                     ]
                                 else:
-                                    results[name]["model_probs"] = None
                                     results[name]["confusion"] += [
                                         confusion_matrix(y_test, y_pred),
                                     ]
@@ -656,7 +656,6 @@ def try_models(
                                         )[:, 1]
                                     ]
                                 else:
-                                    results[name]["model_probs"] = None
                                     results[name]["confusion"] += [
                                         confusion_matrix(y_test, y_pred),
                                     ]
@@ -688,7 +687,6 @@ def try_models(
                                         )[:, 1]
                                     ]
                                 else:
-                                    results[name]["model_probs"] = None
                                     results[name]["confusion"] += [
                                         confusion_matrix(y_test, y_pred),
                                     ]
@@ -696,7 +694,7 @@ def try_models(
                             random_search = RandomizedSearchCV(
                                 pipeline[name],
                                 param_distributions=grid_map,
-                                n_iter=40,
+                                n_iter=30,
                                 cv=skf,
                                 n_jobs=n_jobs_cpu,
                                 random_state=rng,
@@ -713,42 +711,33 @@ def try_models(
                                     )[:, 1]
                                 ]
                             else:
-                                results[name]["model_probs"] = None
                                 results[name]["confusion"] += [
                                     confusion_matrix(y_test, y_pred),
                                 ]
-                        print(
-                            name,
-                            ": ",
-                            "The best estimator across ALL searched params:",
-                            random_search.best_estimator_,
-                        )
-                        print(
-                            name,
-                            ": ",
-                            "The best score across ALL searched params:",
-                            random_search.best_score_,
-                        )
-                        print(
-                            name,
-                            ": ",
-                            "The best parameters across ALL searched params:",
-                            random_search.best_params_,
-                        )
+                        results[name]["rdm_best_params"] = random_search.best_params_
+                        results[name]["rdm_best_score"] = random_search.best_score_
+                        results[name][
+                            "rdm_best_estimator"
+                        ] = random_search.best_estimator_
                         # print("\n",random_search.cv_results_['params'])
                     else:
                         print("list is empty for : ", name)
 
-            print("############ Results Start ###############")
-            print(name)
+            print("############ Results Start ############### : ", name)
             print("scores:", results[name]["scores"])
             print("Accuracy: ", results[name]["accuracy_scores"])
             print("Micro F1 Score: ", results[name]["f1_score_micro"])
             print("Macro F1 Score: ", results[name]["f1_score_macro"])
+            print("RandomizedSearchCV Best Params: ", results[name]["rdm_best_params"])
+            print("RandomizedSearchCV Best Score: ", results[name]["rdm_best_score"])
+            print(
+                "RandomizedSearchCV Best Estimator: ",
+                results[name]["rdm_best_estimator"],
+            )
             print("########### Results End ################")
-            # final_results = pd.DataFrame(results[name])
-            # filename =  op_type + name + ".csv"
-            # final_results.to_csv( filename, index=False)
+            final_results = pd.DataFrame(results[name])
+            filename = op_type + name + ".csv"
+            final_results.to_csv(filename, index=False)
         """
         for model, model_dict in results.items():
             for run, score in enumerate(model_dict["scores"]):
@@ -789,89 +778,6 @@ def try_models(
                 )
                 fig.write_html(f"{path}/{pass_}_{model}_cm_{run}_{op_type}.html")
         """
-    """
-    fig = px.box(
-        result_df,
-        x="feature_set",
-        y="score",
-        color="model",
-        title=f"Model scores from {title} features",
-    )
-
-    fig.add_shape(
-        type="line",
-        x0=0,
-        y0=y,
-        x1=1,
-        y1=y,
-        line={"color": "black"},
-        xref="paper",
-        yref="y",
-    )
-
-    fig.write_html(f"{path}/score_models_{op_type}.html")
-    """
-    """
-    fig = px.box(
-        result_df,
-        x="feature_set",
-        y="accuracy_scores",
-        color="model",
-        title=f"Model scores from {title} features",
-    )
-
-    fig.add_shape(
-        type="line",
-        x0=0,
-        y0=y,
-        x1=1,
-        y1=y,
-        line={"color": "black"},
-        xref="paper",
-        yref="y",
-    )
-
-    fig.write_html(f"{path}/accuracy_models_{op_type}.html")
-
-    fig = px.box(
-        result_df,
-        x="feature_set",
-        y="f1_score_micro",
-        color="model",
-        title=f"Model scores from {title} features",
-    )
-
-    fig.add_shape(
-        type="line",
-        x0=0,
-        y0=y,
-        x1=1,
-        y1=y,
-        line={"color": "black"},
-        xref="paper",
-        yref="y",
-    )
-    fig.write_html(f"{path}/f1_micro_models_{op_type}.html")
-    fig = px.box(
-        result_df,
-        x="feature_set",
-        y="f1_score_macro",
-        color="model",
-        title=f"Model scores from {title} features",
-    )
-
-    fig.add_shape(
-        type="line",
-        x0=0,
-        y0=y,
-        x1=1,
-        y1=y,
-        line={"color": "black"},
-        xref="paper",
-        yref="y",
-    )
-    fig.write_html(f"{path}/f1_macro_models_{op_type}.html")
-    """
     return
 
 
