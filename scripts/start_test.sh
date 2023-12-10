@@ -4,7 +4,11 @@
 #	Downloads the sql DB and loads in the mysql. 
 #########################################################################
 
+cd ../src-files
+
 python3 -u Traditional-ML-Training.py | tee traditional.txt
 python3 -u DL-Training-updated.py | tee traditional-NN.txt
 
 python3 -u main.py ../data/dataset.csv class3 10 kfold random quick | tee tuneup.txt
+
+mv *.txt ../test-results/.
