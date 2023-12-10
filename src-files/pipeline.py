@@ -269,26 +269,6 @@ Pipelines
 PIPELINES = [
     Pipeline(
         [
-            (
-                "CNNClassifier",
-                KerasClassifier(
-                    model=create_cnn_model, epochs=6, batch_size=64, verbose=1
-                ),
-            ),
-        ],
-    ),
-    Pipeline(
-        [
-            (
-                "DNNClassifier",
-                KerasClassifier(
-                    model=create_dnn_model, epochs=6, batch_size=64, verbose=1
-                ),
-            ),
-        ],
-    ),
-    Pipeline(
-        [
             ("scaler", StandardScaler()),
             ("RandomForestClassifier", RandomForestClassifier()),
         ],
@@ -357,6 +337,26 @@ PIPELINES = [
         [
             ("scaler", StandardScaler()),
             ("MLPClassifier", MLPClassifier()),
+        ],
+    ),
+    Pipeline(
+        [
+            (
+                "CNNClassifier",
+                KerasClassifier(
+                    model=create_cnn_model, epochs=6, batch_size=64, verbose=1
+                ),
+            ),
+        ],
+    ),
+    Pipeline(
+        [
+            (
+                "DNNClassifier",
+                KerasClassifier(
+                    model=create_dnn_model, epochs=6, batch_size=64, verbose=1
+                ),
+            ),
         ],
     ),
     Pipeline(
@@ -734,10 +734,10 @@ def try_models(
                 "RandomizedSearchCV Best Estimator: ",
                 results[name]["rdm_best_estimator"],
             )
-            print("########### Results End ################")
-            final_results = pd.DataFrame(results[name])
-            filename = op_type + name + ".csv"
-            final_results.to_csv(filename, index=False)
+            # print("########### Results End ################")
+            # final_results = pd.DataFrame(results[name])
+            # filename = op_type + name + ".csv"
+            # final_results.to_csv(filename, index=False)
         """
         for model, model_dict in results.items():
             for run, score in enumerate(model_dict["scores"]):

@@ -1,0 +1,40 @@
+****************** Decision Tree prediction results ******************
+Accuracy:  0.9941310703843685
+Micro F1 Score:  0.9941310703843685
+Macro F1 Score:  0.9445798019867077
+****************** Gaussian NB prediction results ******************
+Accuracy:  0.48778435427511946
+Micro F1 Score:  0.48778435427511946
+Macro F1 Score:  0.6096563051677458
+****************** kNN prediction results ******************
+Accuracy:  0.9879626328175141
+Micro F1 Score:  0.9879626328175141
+Macro F1 Score:  0.9132127042695839
+****************** SVM prediction results ******************
+Accuracy:  0.9660201098195821
+Micro F1 Score:  0.9660201098195821
+Macro F1 Score:  0.8393998907383541
+****************** Logistic Regression prediction results ******************
+Accuracy:  0.941125294159595
+Micro F1 Score:  0.941125294159595
+Macro F1 Score:  0.6574227384339488
+****************** MLP prediction results ******************
+Accuracy:  0.9841973900021393
+Micro F1 Score:  0.9841973900021393
+Macro F1 Score:  0.9287342560924969
+****************** RF prediction results ******************
+Accuracy:  0.9960992654924054
+Micro F1 Score:  0.9960992654924054
+Macro F1 Score:  0.9479369760613409
+****************** ADA prediction results ******************
+Accuracy:  0.7191970334450546
+Micro F1 Score:  0.7191970334450546
+Macro F1 Score:  0.12600185985720103
+****************** GB prediction results ******************
+Accuracy:  0.9904442701276475
+Micro F1 Score:  0.9904442701276475
+Macro F1 Score:  0.859676816337673
+****************** XGB prediction results ******************
+Accuracy:  0.9973828709976468
+Micro F1 Score:  0.9973828709976468
+Macro F1 Score:  0.9740023184738985
